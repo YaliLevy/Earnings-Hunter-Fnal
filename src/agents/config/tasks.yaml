@@ -1,0 +1,130 @@
+# CrewAI Task Definitions for The Earnings Hunter
+# Sequential task flow: Scout -> Social Listener -> Fusion
+
+analyze_financials:
+  description: >
+    Analyze the financial data for {symbol} from the latest earnings report.
+
+    Steps:
+    1. Fetch earnings data including EPS and revenue vs estimates
+    2. Calculate earnings surprise percentages
+    3. Analyze margin trends (gross, operating, net)
+    4. Review analyst estimates and price targets
+    5. Check insider trading activity
+    6. Evaluate institutional ownership changes
+
+    Provide a financial health score (1-10) with detailed breakdown.
+  expected_output: >
+    A comprehensive financial analysis including:
+    - EPS surprise percentage and analysis
+    - Revenue surprise percentage and analysis
+    - Margin analysis with trends
+    - Analyst consensus score
+    - Insider sentiment indicator
+    - Overall financial health score (1-10)
+    - Key financial highlights (3-5 bullet points)
+  agent: scout_agent
+
+analyze_ceo_tone:
+  description: >
+    Analyze the CEO/CFO tone from the earnings call transcript for {symbol}.
+
+    Steps:
+    1. Fetch the earnings call transcript for Q{quarter} {year}
+    2. Extract CEO and CFO speaking sections
+    3. Analyze confidence language patterns
+    4. Identify uncertainty indicators
+    5. Extract and analyze forward guidance statements
+    6. Calculate overall tone sentiment
+
+    Provide CEO tone scores and key phrases identified.
+  expected_output: >
+    A comprehensive CEO tone analysis including:
+    - CEO confidence score (-1 to 1)
+    - Overall sentiment score (-1 to 1)
+    - Forward guidance sentiment
+    - Uncertainty ratio
+    - Tone summary (Confident/Cautious/Defensive/Optimistic)
+    - Key positive phrases identified
+    - Key negative/uncertain phrases identified
+    - CEO tone score (1-10)
+  agent: scout_agent
+  context:
+    - analyze_financials
+
+analyze_social_sentiment:
+  description: >
+    Analyze retail investor sentiment for {symbol} using FMP social sentiment data.
+
+    Steps:
+    1. Fetch social sentiment data from FMP (Twitter + StockTwits)
+    2. Analyze sentiment scores from both platforms
+    3. Calculate engagement metrics (posts, likes, impressions)
+    4. Fetch and analyze news sentiment RSS
+    5. Calculate combined sentiment agreement
+    6. Calculate hype index based on volume and engagement
+
+    Provide social sentiment scores and key insights.
+  expected_output: >
+    A comprehensive social sentiment analysis including:
+    - Twitter sentiment score (0 to 1)
+    - StockTwits sentiment score (0 to 1)
+    - Combined sentiment score (0 to 1)
+    - Hype index (0-100)
+    - Platform agreement level
+    - News sentiment (bullish/bearish ratio)
+    - Total engagement metrics
+    - Social sentiment score (1-10)
+    - Risk indicators (if hype is excessive)
+  agent: social_listener_agent
+
+synthesize_analysis:
+  description: >
+    Synthesize all analysis components for {symbol} into final prediction
+    and research insight using the Golden Triangle framework.
+
+    Weights:
+    - Financial Data: 40%
+    - CEO Tone: 35%
+    - Social Sentiment: 25%
+
+    Steps:
+    1. Review financial analysis from Scout Agent
+    2. Review CEO tone analysis from Scout Agent
+    3. Review social sentiment from Social Listener Agent
+    4. Apply Golden Triangle weights
+    5. Incorporate ML model prediction: {ml_prediction} ({ml_confidence:.0%} confidence)
+    6. Generate comprehensive research insight
+    7. Identify key risks and opportunities
+
+    Provide final prediction with confidence and detailed reasoning.
+  expected_output: >
+    A complete synthesis report including:
+
+    **Prediction Section:**
+    - Final prediction (Growth/Stagnation/Risk)
+    - Confidence level (High/Medium/Low)
+    - Model agreement summary
+
+    **Golden Triangle Scores:**
+    - Financial score (X/10) - 40% weight
+    - CEO Tone score (X/10) - 35% weight
+    - Social score (X/10) - 25% weight
+    - Weighted total (X/10)
+
+    **Research Insight:**
+    - Executive summary (2-3 sentences)
+    - Key highlights (3-5 bullet points)
+    - Short-term outlook (1-3 months)
+    - Long-term outlook (6-12 months)
+    - Key risks (3-5 bullet points)
+    - Bottom line (1 paragraph synthesis)
+
+    **Disclaimer:**
+    - Clear statement that this is for educational purposes only
+    - Not financial advice disclaimer
+  agent: fusion_agent
+  context:
+    - analyze_financials
+    - analyze_ceo_tone
+    - analyze_social_sentiment

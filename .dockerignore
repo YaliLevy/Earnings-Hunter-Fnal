@@ -1,0 +1,93 @@
+# Docker ignore file for The Earnings Hunter
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+*.manifest
+*.spec
+
+# Virtual environments
+venv
+env
+ENV
+.venv
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.nox
+
+# Documentation
+docs/_build
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Data (will be mounted as volume)
+data/raw/*
+data/processed/*
+data/models/*
+data/cache/*
+data/training/*
+!data/.gitkeep
+
+# Logs
+*.log
+logs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Coverage
+.coverage
+coverage.xml
+
+# mypy
+.mypy_cache
+
+# Local development
+*.local
