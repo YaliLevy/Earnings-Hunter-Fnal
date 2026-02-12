@@ -1,23 +1,22 @@
 """
-The Earnings Hunter - Modern Financial Analysis Dashboard
-
-A sleek, professional single-page app with glass-morphism design,
-animated components, and the StockFlow design system.
+The Earnings Hunter - Institutional Cybernetics Dashboard
+Bloomberg Terminal density meets Linear's refined minimalism.
 """
 
 import streamlit as st
 from pathlib import Path
 import sys
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import plotly.graph_objects as go
+import numpy as np
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from app.components.disclaimer import show_disclaimer_modal, show_disclaimer_footer
-from app.config.theme import COLORS, MASTER_CSS, get_plotly_layout, get_candlestick_colors, get_prediction_class, get_prediction_color
+from app.config.theme import COLORS, MASTER_CSS, get_plotly_layout, get_prediction_class, get_prediction_color
 
 # =============================================================================
 # PAGE CONFIGURATION
@@ -32,431 +31,622 @@ st.set_page_config(
 # Inject master CSS
 st.markdown(MASTER_CSS, unsafe_allow_html=True)
 
+# Additional CSS for exact design match
+st.markdown(f"""
+<style>
+    /* Full viewport cockpit - no scrolling on main frame */
+    .main .block-container {{
+        padding: 0 !important;
+        max-width: 100% !important;
+        min-height: 100vh;
+    }}
+
+    /* Command Bar - Zone A */
+    .command-bar-v2 {{
+        height: 56px;
+        background: rgba(5, 5, 5, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid {COLORS['border']};
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }}
+
+    .logo-v2 {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }}
+
+    .logo-icon {{
+        font-size: 20px;
+    }}
+
+    .logo-text-v2 {{
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: {COLORS['text_primary']};
+    }}
+
+    .search-container {{
+        flex: 1;
+        max-width: 600px;
+        margin: 0 32px;
+    }}
+
+    .search-input {{
+        width: 100%;
+        background: {COLORS['bg_card']};
+        border: 1px solid {COLORS['border']};
+        border-radius: 8px;
+        padding: 10px 16px;
+        color: {COLORS['text_primary']};
+        font-size: 14px;
+        text-align: center;
+    }}
+
+    .search-input::placeholder {{
+        color: {COLORS['text_muted']};
+    }}
+
+    .right-controls {{
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }}
+
+    .deep-reasoning-toggle {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: {COLORS['text_muted']};
+        font-size: 12px;
+        font-weight: 500;
+    }}
+
+    .live-indicator {{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: {COLORS['accent_green']};
+        font-size: 12px;
+        font-weight: 600;
+    }}
+
+    .live-dot {{
+        width: 8px;
+        height: 8px;
+        background: {COLORS['accent_green']};
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }}
+
+    /* Ticker Info Strip */
+    .ticker-strip {{
+        background: {COLORS['bg_dark']};
+        border-bottom: 1px solid {COLORS['border']};
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }}
+
+    .ticker-left {{
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }}
+
+    .company-name {{
+        font-size: 14px;
+        font-weight: 500;
+        color: {COLORS['text_primary']};
+    }}
+
+    .ticker-price-lg {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 20px;
+        font-weight: 600;
+        color: {COLORS['text_primary']};
+    }}
+
+    .ticker-change {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        font-weight: 500;
+    }}
+
+    .ticker-right {{
+        display: flex;
+        gap: 24px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: {COLORS['text_muted']};
+    }}
+
+    /* Main Cockpit Layout */
+    .cockpit-layout {{
+        display: flex;
+        min-height: calc(100vh - 110px);
+    }}
+
+    /* Zone B - Intelligence Hub */
+    .zone-b {{
+        width: 260px;
+        min-width: 260px;
+        background: {COLORS['bg_dark']};
+        border-right: 1px solid {COLORS['border']};
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }}
+
+    .zone-title {{
+        font-size: 10px;
+        font-weight: 700;
+        color: {COLORS['text_muted']};
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 16px;
+    }}
+
+    /* SVG Confidence Ring */
+    .confidence-ring-container {{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px 0;
+    }}
+
+    .confidence-ring-svg {{
+        width: 140px;
+        height: 140px;
+        transform: rotate(-90deg);
+    }}
+
+    .ring-track {{
+        fill: none;
+        stroke: {COLORS['border']};
+        stroke-width: 8;
+    }}
+
+    .ring-fill {{
+        fill: none;
+        stroke: {COLORS['accent_green']};
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-dasharray: 377;
+        transition: stroke-dashoffset 1s ease-out;
+    }}
+
+    .ring-center {{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }}
+
+    .ring-percentage {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 32px;
+        font-weight: 700;
+        color: {COLORS['accent_green']};
+    }}
+
+    .ring-label {{
+        font-size: 10px;
+        font-weight: 600;
+        color: {COLORS['text_muted']};
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 4px;
+    }}
+
+    .verdict-badge {{
+        text-align: center;
+        margin-top: 12px;
+    }}
+
+    .verdict-text {{
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }}
+
+    .verdict-bullish {{ color: {COLORS['accent_green']}; }}
+    .verdict-bearish {{ color: {COLORS['accent_red']}; }}
+    .verdict-neutral {{ color: {COLORS['accent_yellow']}; }}
+
+    /* AI Analysis Block */
+    .ai-analysis-section {{
+        margin-top: 24px;
+    }}
+
+    .ai-analysis-title {{
+        font-size: 10px;
+        font-weight: 700;
+        color: {COLORS['accent_red']};
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }}
+
+    .ai-analysis-text {{
+        font-size: 13px;
+        color: {COLORS['text_secondary']};
+        line-height: 1.6;
+    }}
+
+    /* Zone C - Market Stage */
+    .zone-c {{
+        flex: 1;
+        background: {COLORS['bg_dark']};
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+    }}
+
+    .chart-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }}
+
+    .chart-title {{
+        font-size: 14px;
+        font-weight: 500;
+        color: {COLORS['text_primary']};
+    }}
+
+    .chart-subtitle {{
+        font-size: 11px;
+        color: {COLORS['text_muted']};
+        margin-left: 12px;
+    }}
+
+    .timeframe-pills {{
+        display: flex;
+        gap: 4px;
+        background: {COLORS['bg_card']};
+        padding: 4px;
+        border-radius: 6px;
+    }}
+
+    .tf-pill {{
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: {COLORS['text_muted']};
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }}
+
+    .tf-pill:hover {{
+        color: {COLORS['text_primary']};
+    }}
+
+    .tf-pill.active {{
+        background: {COLORS['accent_green']};
+        color: {COLORS['bg_dark']};
+    }}
+
+    .chart-container {{
+        flex: 1;
+        min-height: 300px;
+    }}
+
+    .empty-chart {{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: {COLORS['text_muted']};
+    }}
+
+    .empty-chart-text {{
+        font-size: 16px;
+        margin-bottom: 8px;
+    }}
+
+    .empty-chart-hint {{
+        font-size: 12px;
+        color: {COLORS['text_dark']};
+    }}
+
+    /* Zone D - Financial Intel */
+    .zone-d {{
+        width: 280px;
+        min-width: 280px;
+        background: {COLORS['bg_dark']};
+        border-left: 1px solid {COLORS['border']};
+        padding: 20px;
+        overflow-y: auto;
+    }}
+
+    /* Bento Cards V2 */
+    .bento-v2 {{
+        background: {COLORS['bg_card']};
+        border: 1px solid {COLORS['border']};
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
+        cursor: default;
+    }}
+
+    .bento-v2:hover {{
+        border-color: {COLORS['text_muted']};
+    }}
+
+    .bento-v2.clickable {{
+        cursor: pointer;
+    }}
+
+    .bento-v2.clickable:hover {{
+        background: {COLORS['bg_card_hover']};
+    }}
+
+    .bento-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }}
+
+    .bento-title {{
+        font-size: 10px;
+        font-weight: 700;
+        color: {COLORS['text_muted']};
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }}
+
+    .bento-chevron {{
+        color: {COLORS['text_muted']};
+        font-size: 14px;
+    }}
+
+    /* Financials Card */
+    .fin-row {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }}
+
+    .fin-label {{
+        font-size: 11px;
+        color: {COLORS['text_muted']};
+    }}
+
+    .fin-value {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        font-weight: 600;
+        color: {COLORS['text_primary']};
+    }}
+
+    .fin-value.positive {{ color: {COLORS['accent_green']}; }}
+    .fin-value.negative {{ color: {COLORS['accent_red']}; }}
+
+    /* Earnings Call Card */
+    .earnings-quarter {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: {COLORS['text_muted']};
+        margin-bottom: 8px;
+    }}
+
+    .earnings-badge {{
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }}
+
+    .earnings-badge.bullish {{
+        background: rgba(0, 240, 144, 0.15);
+        color: {COLORS['accent_green']};
+    }}
+
+    .earnings-badge.bearish {{
+        background: rgba(255, 46, 80, 0.15);
+        color: {COLORS['accent_red']};
+    }}
+
+    .earnings-badge.neutral {{
+        background: rgba(107, 114, 128, 0.15);
+        color: {COLORS['text_muted']};
+    }}
+
+    .earnings-summary {{
+        font-size: 12px;
+        color: {COLORS['text_secondary']};
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }}
+
+    /* News Card Items */
+    .news-item {{
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid {COLORS['border']};
+    }}
+
+    .news-item:last-child {{
+        border-bottom: none;
+    }}
+
+    .news-dot {{
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-top: 6px;
+        flex-shrink: 0;
+    }}
+
+    .news-dot.bullish {{ background: {COLORS['accent_green']}; }}
+    .news-dot.bearish {{ background: {COLORS['accent_red']}; }}
+    .news-dot.neutral {{ background: {COLORS['text_muted']}; }}
+
+    .news-title-text {{
+        font-size: 11px;
+        color: {COLORS['text_secondary']};
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }}
+
+    /* Insider Activity Card */
+    .insider-bar-v2 {{
+        display: flex;
+        height: 24px;
+        background: {COLORS['border']};
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 12px 0;
+    }}
+
+    .insider-buy-bar {{
+        background: {COLORS['accent_green']};
+        transition: width 0.5s ease;
+    }}
+
+    .insider-sell-bar {{
+        background: {COLORS['accent_red']};
+        transition: width 0.5s ease;
+    }}
+
+    .insider-counts {{
+        display: flex;
+        justify-content: space-between;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+    }}
+
+    .insider-count {{
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }}
+
+    .insider-count.buy {{ color: {COLORS['accent_green']}; }}
+    .insider-count.sell {{ color: {COLORS['accent_red']}; }}
+
+    /* Dialog Styles */
+    .dialog-overlay {{
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+
+    .dialog-content {{
+        background: {COLORS['bg_card']};
+        border: 1px solid {COLORS['border']};
+        border-radius: 16px;
+        max-width: 700px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: hidden;
+    }}
+
+    .dialog-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid {COLORS['border']};
+    }}
+
+    .dialog-title {{
+        font-size: 16px;
+        font-weight: 600;
+        color: {COLORS['text_primary']};
+    }}
+
+    .dialog-close {{
+        background: none;
+        border: none;
+        color: {COLORS['text_muted']};
+        font-size: 24px;
+        cursor: pointer;
+    }}
+
+    .dialog-body {{
+        padding: 24px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }}
+
+    /* Footer Disclaimer */
+    .footer-disclaimer {{
+        background: {COLORS['bg_dark']};
+        border-top: 1px solid {COLORS['border']};
+        padding: 8px 24px;
+        font-size: 9px;
+        color: {COLORS['text_muted']};
+        text-align: center;
+    }}
+
+    /* Hide default Streamlit elements */
+    .stButton > button {{
+        background: {COLORS['accent_green']} !important;
+        color: {COLORS['bg_dark']} !important;
+        border: none !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }}
+
+    /* Streamlit form submit */
+    .stTextInput input {{
+        background: {COLORS['bg_card']} !important;
+        border: 1px solid {COLORS['border']} !important;
+        color: {COLORS['text_primary']} !important;
+        border-radius: 8px !important;
+    }}
+
+    .stTextInput input:focus {{
+        border-color: {COLORS['accent_green']} !important;
+        box-shadow: 0 0 0 2px rgba(0, 240, 144, 0.1) !important;
+    }}
+</style>
+""", unsafe_allow_html=True)
+
 # Show disclaimer modal
 show_disclaimer_modal()
 
 
 # =============================================================================
-# COMMAND BAR (HEADER)
-# =============================================================================
-def render_command_bar():
-    """Render the premium command bar header with API status."""
-    import time
-    api_latency = f"{int(time.time() * 1000) % 50 + 8}ms"  # Simulated latency
-
-    st.markdown(f"""
-    <div class="command-bar">
-        <div class="logo-section">
-            <div class="logo-dot"></div>
-            <span class="logo-text">EARNINGS<span class="muted">HUNTER</span></span>
-        </div>
-        <div class="api-status">
-            <div class="status-dot"></div>
-            <span>API: {api_latency}</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# SEARCH SECTION (Command Palette Style)
-# =============================================================================
-def render_search():
-    """Render the command palette style search bar."""
-    col1, col2, col3 = st.columns([5, 1, 1])
-
-    with col1:
-        ticker = st.text_input(
-            "Search",
-            placeholder="⌘K SEARCH TICKER...",
-            label_visibility="collapsed",
-            key="ticker_input"
-        )
-
-    with col2:
-        analyze_button = st.button(
-            "HUNT",
-            type="primary",
-            use_container_width=True
-        )
-
-    with col3:
-        deep_analysis = st.checkbox(
-            "Deep",
-            help="Run CrewAI agents for comprehensive analysis (~$0.02)"
-        )
-
-    return ticker, analyze_button, deep_analysis
-
-
-# =============================================================================
-# COMPANY HEADER
-# =============================================================================
-def render_company_header(result: Dict[str, Any]):
-    """Render the company information header."""
-    price = result.get('current_price') or 0
-    change = result.get('price_change') or 0
-    change_pct = result.get('price_change_pct') or 0
-    change_class = "price-up" if change >= 0 else "price-down"
-    change_sign = "+" if change >= 0 else ""
-
-    st.markdown(f"""
-    <div class="company-header">
-        <h2 class="company-name">{result.get('company_name', result['symbol'])}</h2>
-        <p class="company-info">{result['symbol']} • {result.get('quarter', 'Latest Quarter')}</p>
-        <p class="company-price">
-            ${price:,.2f}
-            <span class="{change_class} price-change">
-                {change_sign}{change:,.2f} ({change_sign}{change_pct:.2f}%)
-            </span>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# PREDICTION WITH CONFIDENCE RING
-# =============================================================================
-def render_prediction_banner(prediction: str, confidence: float):
-    """Render the prediction with animated confidence ring."""
-    pred_class = get_prediction_class(prediction)
-    pred_color = get_prediction_color(prediction)
-
-    # Calculate ring offset (175 is full circle, 0 is empty)
-    ring_offset = 175 - (confidence * 175)
-
-    icons = {
-        "Growth": "🚀",
-        "Risk": "⚠️",
-        "Stagnation": "➡️"
-    }
-    icon = icons.get(prediction, "📊")
-
-    verdict_class = "sell" if prediction == "Risk" else ""
-
-    st.markdown(f"""
-    <div class="confidence-container">
-        <div class="confidence-ring">
-            <svg class="ring-svg" viewBox="0 0 64 64">
-                <circle class="ring-bg" cx="32" cy="32" r="28"/>
-                <circle class="ring-progress" cx="32" cy="32" r="28"
-                        style="stroke: {pred_color}; stroke-dashoffset: {ring_offset};"/>
-            </svg>
-            <span class="ring-value">{confidence:.0%}</span>
-        </div>
-        <div>
-            <div class="verdict-text {verdict_class}" style="color: {pred_color};">
-                {icon} {prediction.upper()} SIGNAL
-            </div>
-            <div class="verdict-description">
-                AI confidence based on Golden Triangle analysis
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# RADAR CHART - GOLDEN TRIANGLE VISUALIZATION
-# =============================================================================
-def render_radar_chart(scores: Dict[str, Any]):
-    """Render Golden Triangle as interactive Radar Chart."""
-    financial = scores.get('financial', 0) or 0
-    ceo = scores.get('ceo_tone') or 5  # Default to 5 if no transcript
-    social = scores.get('social', 0) or 0
-    total = scores.get('weighted_total', 0) or 0
-
-    fig = go.Figure()
-
-    # Add radar trace - triangle shape
-    fig.add_trace(go.Scatterpolar(
-        r=[financial, ceo, social, financial],  # Close the shape
-        theta=['Financials', 'CEO Tone', 'Social', 'Financials'],
-        fill='toself',
-        fillcolor='rgba(0, 240, 144, 0.15)',
-        line=dict(color=COLORS['accent_green'], width=2),
-        name='Score'
-    ))
-
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 10],
-                gridcolor=COLORS['border'],
-                tickfont=dict(size=8, color=COLORS['text_muted']),
-                showline=False
-            ),
-            angularaxis=dict(
-                gridcolor=COLORS['border'],
-                linecolor=COLORS['border'],
-                tickfont=dict(size=10, color=COLORS['text_secondary'])
-            ),
-            bgcolor='rgba(0,0,0,0)'
-        ),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        showlegend=False,
-        height=220,
-        margin=dict(l=50, r=50, t=30, b=30)
-    )
-
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
-    # Score display below radar
-    total_color = COLORS['accent_green'] if total >= 7 else COLORS['accent_red'] if total <= 4 else COLORS['accent_yellow']
-    st.markdown(f"""
-    <div style="text-align: center; margin-top: -10px;">
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 36px; font-weight: 700; color: {total_color};">
-            {total:.0f}
-        </div>
-        <div style="font-size: 10px; color: {COLORS['text_muted']}; text-transform: uppercase; letter-spacing: 2px;">
-            SCORE
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# ANOMALY CARDS
-# =============================================================================
-def render_anomaly_card(label: str, value: str, icon: str, is_warning: bool = False):
-    """Render a detected anomaly card."""
-    value_color = COLORS['accent_red'] if is_warning else COLORS['accent_green']
-    border_color = 'rgba(255, 46, 80, 0.3)' if is_warning else 'rgba(0, 240, 144, 0.3)'
-
-    st.markdown(f"""
-    <div class="anomaly-card" style="border-left: 3px solid {value_color};">
-        <div class="anomaly-header">
-            <span class="anomaly-label">{label}</span>
-            <span class="anomaly-icon">{icon}</span>
-        </div>
-        <div class="anomaly-value" style="color: {value_color};">{value}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# PRICE TARGET GAUGE
-# =============================================================================
-def render_price_target_gauge(current: float, target: float):
-    """Render analyst price target as a gauge visualization."""
-    if not current or not target:
-        st.markdown(f"""
-        <div class="bento-card">
-            <div class="bento-label">Analyst Target</div>
-            <div style="color: {COLORS['text_muted']}; text-align: center; padding: 20px;">No data</div>
-        </div>
-        """, unsafe_allow_html=True)
-        return
-
-    # Calculate position (0-100% along the bar)
-    low = min(current * 0.8, target * 0.8)
-    high = max(current * 1.2, target * 1.2)
-    range_size = high - low
-    current_pos = min(max(((current - low) / range_size) * 100, 5), 95)
-    target_pos = min(max(((target - low) / range_size) * 100, 5), 95)
-
-    st.markdown(f"""
-    <div class="bento-card">
-        <div class="bento-label">Analyst Target</div>
-        <div class="target-gauge">
-            <div class="target-track">
-                <div class="target-marker" style="left: {current_pos}%;">
-                    <div class="marker-line current"></div>
-                    <div class="marker-label current">NOW</div>
-                </div>
-                <div class="target-marker" style="left: {target_pos}%;">
-                    <div class="marker-line target"></div>
-                    <div class="marker-label target">${target:.0f}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# BENTO CARD HELPERS
-# =============================================================================
-def render_eps_bento(fin_data: Dict[str, Any]):
-    """Render EPS bento card."""
-    eps_beat = fin_data.get("eps_beat", False)
-    eps_actual = fin_data.get('eps_actual', 0)
-    eps_est = fin_data.get('eps_estimated', 0)
-    eps_surprise = fin_data.get('eps_surprise', 0)
-
-    badge_class = "" if eps_beat else "miss-badge"
-    badge_text = "BEAT" if eps_beat else "MISS"
-    badge_color = COLORS['accent_green'] if eps_beat else COLORS['accent_red']
-
-    st.markdown(f"""
-    <div class="bento-card">
-        <div class="bento-label">EPS (Normalized)</div>
-        <div class="bento-value" style="color: {badge_color};">${eps_actual:.2f}</div>
-        <div class="bento-sublabel">vs ${eps_est:.2f} cons.</div>
-        <div style="margin-top: 8px;">
-            <span class="{badge_class} beat-badge">{badge_text} {eps_surprise:+.1f}%</span>
-        </div>
-        <div class="bento-progress">
-            <div class="bento-progress-fill" style="width: {min(abs(eps_surprise) * 5, 100)}%; background: {badge_color};"></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def render_revenue_bento(fin_data: Dict[str, Any]):
-    """Render Revenue bento card."""
-    rev_beat = fin_data.get("revenue_beat", False)
-    rev_actual = fin_data.get('revenue_actual', 0)
-    rev_surprise = fin_data.get('revenue_surprise', 0)
-
-    yoy_color = COLORS['accent_green'] if rev_surprise > 0 else COLORS['accent_red']
-
-    st.markdown(f"""
-    <div class="bento-card">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="bento-label">Revenue (Q3)</div>
-            <div style="font-size: 12px; color: {yoy_color};">{rev_surprise:+.0f}% YoY</div>
-        </div>
-        <div class="bento-value">${rev_actual:.1f}B</div>
-        <div class="bento-progress">
-            <div class="bento-progress-fill" style="width: {min(abs(rev_surprise) * 3, 100)}%; background: {yoy_color};"></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def render_insider_bar(fin_data: Dict[str, Any]):
-    """Render Insider Activity visual bar."""
-    buys = fin_data.get('insider_buys', 0)
-    sells = fin_data.get('insider_sells', 0)
-    total = buys + sells
-
-    if total > 0:
-        buy_pct = (buys / total) * 100
-        sell_pct = (sells / total) * 100
-    else:
-        buy_pct = sell_pct = 50
-
-    # Calculate dollar values (approximate)
-    buy_value = buys * 50000  # Rough estimate
-    sell_value = sells * 50000
-
-    st.markdown(f"""
-    <div class="bento-card">
-        <div class="bento-label">Insider Activity (90d)</div>
-        <div class="insider-bar-container">
-            <div class="insider-labels">
-                <span class="insider-label sell">SELL</span>
-                <span class="insider-label buy">BUY</span>
-            </div>
-            <div class="insider-bar">
-                <div class="insider-sell" style="width: {sell_pct}%;"></div>
-                <div class="insider-buy" style="width: {buy_pct}%;"></div>
-            </div>
-            <div class="insider-values">
-                <span>${sell_value/1e6:.1f}M Sold</span>
-                <span>${buy_value/1e6:.1f}M Bought</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# PRICE CHART - LINE CHART WITH GRADIENT
-# =============================================================================
-def render_price_chart(prices, ticker: str, timeframe: str = "3M"):
-    """Render a modern line chart with gradient fill."""
-    if not prices:
-        st.info("No price history available")
-        return
-
-    dates = [p.date for p in prices]
-    closes = [p.close for p in prices]
-
-    # Create line chart with gradient fill
-    fig = go.Figure()
-
-    # Add the main line
-    fig.add_trace(go.Scatter(
-        x=dates,
-        y=closes,
-        mode='lines',
-        name='Price',
-        line=dict(color=COLORS['accent_green'], width=2),
-        fill='tozeroy',
-        fillcolor='rgba(0, 240, 144, 0.1)',
-        hovertemplate='%{x}<br>$%{y:.2f}<extra></extra>'
-    ))
-
-    # Calculate price change for title color
-    if len(closes) >= 2:
-        price_change = closes[-1] - closes[0]
-        line_color = COLORS['accent_green'] if price_change >= 0 else COLORS['accent_red']
-        fill_color = 'rgba(0, 240, 144, 0.1)' if price_change >= 0 else 'rgba(255, 46, 80, 0.1)'
-
-        # Update colors based on performance
-        fig.update_traces(
-            line=dict(color=line_color, width=2),
-            fillcolor=fill_color
-        )
-
-    layout = get_plotly_layout(f"{ticker} - {timeframe} Price History", height=350, show_legend=False)
-    layout['xaxis_rangeslider_visible'] = False
-    layout['hovermode'] = 'x unified'
-    fig.update_layout(**layout)
-
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
-
-# =============================================================================
-# NEWS CARDS
-# =============================================================================
-def render_news_card(article: Dict[str, Any]):
-    """Render a single news article card."""
-    score = article.get("score", 0)
-    sentiment = article.get("sentiment", "neutral")
-
-    sentiment_icons = {"bullish": "🟢", "bearish": "🔴", "neutral": "🟡"}
-    icon = sentiment_icons.get(sentiment, "🟡")
-
-    ai_reason = article.get("ai_reason", "")
-    source = article.get("source", "Unknown")
-
-    st.markdown(f"""
-    <div class="news-card {sentiment}">
-        <div class="news-title">{icon} {article['title']}</div>
-        <div class="news-meta">
-            <span class="news-source">{source}{f' • {ai_reason}' if ai_reason else ''}</span>
-            <span class="news-sentiment {sentiment}">{sentiment.upper()} ({score:+.2f})</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# STAT BOX
-# =============================================================================
-def render_stat_box(value: str, label: str, delta: str = None, delta_positive: bool = True):
-    """Render a stat box."""
-    delta_html = ""
-    if delta:
-        delta_color = COLORS['accent_teal'] if delta_positive else COLORS['accent_red']
-        delta_html = f'<div class="stat-delta" style="color: {delta_color};">{delta}</div>'
-
-    st.markdown(f"""
-    <div class="stat-box">
-        <div class="stat-value">{value}</div>
-        <div class="stat-label">{label}</div>
-        {delta_html}
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =============================================================================
-# ANALYSIS FUNCTION
+# ANALYSIS FUNCTION (Keep existing logic)
 # =============================================================================
 def run_analysis(ticker: str, progress_callback=None) -> Dict[str, Any]:
     """Run analysis using FMP data and ML models."""
@@ -488,6 +678,8 @@ def run_analysis(ticker: str, progress_callback=None) -> Dict[str, Any]:
         result["price_change"] = quote.change
         result["price_change_pct"] = quote.change_percentage
         result["company_name"] = quote.name
+        result["volume"] = getattr(quote, 'volume', 0)
+        result["market_cap"] = getattr(quote, 'market_cap', 0)
     else:
         result["current_price"] = 0
         result["company_name"] = ticker
@@ -611,11 +803,13 @@ def run_analysis(ticker: str, progress_callback=None) -> Dict[str, Any]:
         "sentiment_score": 0.5,
         "tone_summary": "N/A",
     }
+    result["transcript_content"] = None
 
     if transcript and transcript.content:
         analyzer = TranscriptAnalyzer()
         ceo_analysis = analyzer.extract_features_ai(transcript.content, ticker)
         result["ceo_analysis"] = ceo_analysis
+        result["transcript_content"] = transcript.content
 
     # Step 7: Get stock news and analyze sentiment
     if progress_callback:
@@ -692,14 +886,8 @@ def run_analysis(ticker: str, progress_callback=None) -> Dict[str, Any]:
 
     if has_transcript:
         weighted_total = (financial_score * 0.40) + (ceo_score * 0.35) + (social_score * 0.25)
-        financial_weight = 40
-        ceo_weight = 35
-        social_weight = 25
     else:
         weighted_total = (financial_score * 0.61) + (social_score * 0.39)
-        financial_weight = 61
-        ceo_weight = 0
-        social_weight = 39
 
     result["scores"] = {
         "financial": round(financial_score, 1),
@@ -707,11 +895,6 @@ def run_analysis(ticker: str, progress_callback=None) -> Dict[str, Any]:
         "social": round(social_score, 1),
         "weighted_total": round(weighted_total, 1),
         "has_transcript": has_transcript,
-        "weights": {
-            "financial": financial_weight,
-            "ceo_tone": ceo_weight,
-            "social": social_weight
-        }
     }
 
     # Step 9: Run ML prediction
@@ -800,16 +983,492 @@ def run_agent_analysis(ticker: str, ml_prediction: str, ml_confidence: float) ->
 
 
 # =============================================================================
+# RENDER FUNCTIONS
+# =============================================================================
+
+def render_command_bar():
+    """Render Zone A - Command Bar."""
+    deep_reasoning = st.session_state.get("deep_reasoning", False)
+    dr_color = COLORS['accent_purple'] if deep_reasoning else COLORS['text_muted']
+
+    st.markdown(f"""
+    <div class="command-bar-v2">
+        <div class="logo-v2">
+            <span class="logo-icon">⚡</span>
+            <span class="logo-text-v2">EARNINGS HUNTER</span>
+        </div>
+        <div class="right-controls">
+            <div class="deep-reasoning-toggle" style="color: {dr_color};">
+                DEEP REASONING
+            </div>
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                LIVE
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_ticker_strip(result: Dict[str, Any]):
+    """Render the ticker info strip."""
+    price = result.get('current_price', 0)
+    change = result.get('price_change', 0)
+    change_pct = result.get('price_change_pct', 0)
+    change_color = COLORS['accent_green'] if change >= 0 else COLORS['accent_red']
+    change_sign = "+" if change >= 0 else ""
+
+    volume = result.get('volume', 0)
+    market_cap = result.get('market_cap', 0)
+
+    # Format volume
+    if volume >= 1e6:
+        vol_str = f"{volume/1e6:.1f}M"
+    elif volume >= 1e3:
+        vol_str = f"{volume/1e3:.1f}K"
+    else:
+        vol_str = str(int(volume))
+
+    # Format market cap
+    if market_cap >= 1e12:
+        cap_str = f"${market_cap/1e12:.1f}T"
+    elif market_cap >= 1e9:
+        cap_str = f"${market_cap/1e9:.1f}B"
+    else:
+        cap_str = f"${market_cap/1e6:.1f}M"
+
+    st.markdown(f"""
+    <div class="ticker-strip">
+        <div class="ticker-left">
+            <span class="company-name">{result.get('company_name', result['symbol'])}</span>
+            <span class="ticker-price-lg">${price:,.2f}</span>
+            <span class="ticker-change" style="color: {change_color};">
+                {change_sign}{change:.2f} ({change_sign}{change_pct:.2f}%)
+            </span>
+        </div>
+        <div class="ticker-right">
+            <span>Vol: {vol_str}</span>
+            <span>MCap: {cap_str}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_confidence_ring(confidence: float, prediction: str):
+    """Render SVG confidence ring."""
+    # Calculate stroke-dashoffset (377 is circumference, 0 is full)
+    offset = 377 * (1 - confidence)
+
+    # Get color based on prediction
+    if prediction == "Growth":
+        ring_color = COLORS['accent_green']
+        verdict_class = "verdict-bullish"
+        verdict_text = "BULLISH"
+    elif prediction == "Risk":
+        ring_color = COLORS['accent_red']
+        verdict_class = "verdict-bearish"
+        verdict_text = "BEARISH"
+    else:
+        ring_color = COLORS['accent_yellow']
+        verdict_class = "verdict-neutral"
+        verdict_text = "NEUTRAL"
+
+    st.markdown(f"""
+    <div class="confidence-ring-container">
+        <div style="position: relative; width: 140px; height: 140px;">
+            <svg class="confidence-ring-svg" viewBox="0 0 140 140">
+                <circle class="ring-track" cx="70" cy="70" r="60"/>
+                <circle class="ring-fill" cx="70" cy="70" r="60"
+                        style="stroke: {ring_color}; stroke-dashoffset: {offset};"/>
+            </svg>
+            <div class="ring-center">
+                <div class="ring-percentage" style="color: {ring_color};">{confidence:.0%}</div>
+                <div class="ring-label">CONFIDENCE</div>
+            </div>
+        </div>
+        <div class="verdict-badge">
+            <div class="verdict-text {verdict_class}">{verdict_text}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_ai_analysis(result: Dict[str, Any]):
+    """Render AI Analysis text block."""
+    ceo_data = result.get("ceo_analysis", {})
+    fin_data = result.get("financial_data", {})
+    prediction = result.get("prediction", "Stagnation")
+
+    # Generate analysis text
+    symbol = result.get("symbol", "")
+    company = result.get("company_name", symbol)
+
+    eps_beat = fin_data.get("eps_beat", False)
+    eps_surprise = fin_data.get("eps_surprise", 0)
+
+    if prediction == "Growth":
+        sentiment = "exceptional"
+        outlook = "strong upside potential"
+    elif prediction == "Risk":
+        sentiment = "concerning"
+        outlook = "elevated risk"
+    else:
+        sentiment = "mixed"
+        outlook = "sideways movement"
+
+    analysis_text = f"{company} demonstrates {sentiment} fundamental strength "
+
+    if eps_beat:
+        analysis_text += f"with a significant {abs(eps_surprise):.0f}% EPS beat, "
+    else:
+        analysis_text += f"despite a {abs(eps_surprise):.0f}% EPS miss, "
+
+    analysis_text += f"indicating {outlook}. "
+
+    # Add CEO tone if available
+    if ceo_data.get("has_transcript"):
+        tone = ceo_data.get("tone_summary", "neutral")
+        analysis_text += f"CEO tone analysis shows {tone.lower()} sentiment."
+
+    st.markdown(f"""
+    <div class="ai-analysis-section">
+        <div class="ai-analysis-title">AI ANALYSIS</div>
+        <div class="ai-analysis-text">{analysis_text}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_price_chart(prices: List, ticker: str, timeframe: str = "1M"):
+    """Render price chart with SMA and projection."""
+    if not prices:
+        return
+
+    dates = [p.date for p in prices]
+    closes = [p.close for p in prices]
+
+    # Calculate SMA(20)
+    sma_window = min(20, len(closes))
+    sma = []
+    for i in range(len(closes)):
+        if i < sma_window - 1:
+            sma.append(None)
+        else:
+            sma.append(sum(closes[i-sma_window+1:i+1]) / sma_window)
+
+    # Create projection (simple linear extrapolation)
+    if len(closes) >= 5:
+        recent = closes[-5:]
+        slope = (recent[-1] - recent[0]) / 4
+        last_date = datetime.strptime(dates[-1], "%Y-%m-%d") if isinstance(dates[-1], str) else dates[-1]
+        proj_dates = [(last_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 8)]
+        proj_values = [closes[-1] + slope * i for i in range(1, 8)]
+    else:
+        proj_dates = []
+        proj_values = []
+
+    # Determine colors based on performance
+    if len(closes) >= 2:
+        price_change = closes[-1] - closes[0]
+        line_color = COLORS['accent_green'] if price_change >= 0 else COLORS['accent_red']
+        fill_color = 'rgba(0, 240, 144, 0.15)' if price_change >= 0 else 'rgba(255, 46, 80, 0.15)'
+    else:
+        line_color = COLORS['accent_green']
+        fill_color = 'rgba(0, 240, 144, 0.15)'
+
+    fig = go.Figure()
+
+    # Area chart for price
+    fig.add_trace(go.Scatter(
+        x=dates,
+        y=closes,
+        mode='lines',
+        name='Price',
+        line=dict(color=line_color, width=2),
+        fill='tozeroy',
+        fillcolor=fill_color,
+        hovertemplate='%{x}<br>$%{y:.2f}<extra></extra>'
+    ))
+
+    # SMA line
+    fig.add_trace(go.Scatter(
+        x=dates,
+        y=sma,
+        mode='lines',
+        name='SMA(20)',
+        line=dict(color=COLORS['text_muted'], width=1, dash='solid'),
+        hovertemplate='SMA: $%{y:.2f}<extra></extra>'
+    ))
+
+    # Projection line
+    if proj_dates:
+        fig.add_trace(go.Scatter(
+            x=[dates[-1]] + proj_dates,
+            y=[closes[-1]] + proj_values,
+            mode='lines',
+            name='Projection',
+            line=dict(color=COLORS['text_muted'], width=1, dash='dot'),
+            hovertemplate='Proj: $%{y:.2f}<extra></extra>'
+        ))
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=COLORS['text_primary']),
+        height=320,
+        margin=dict(l=0, r=0, t=0, b=0),
+        showlegend=False,
+        xaxis=dict(
+            gridcolor=COLORS['border'],
+            showgrid=True,
+            gridwidth=1,
+            tickfont=dict(size=10, color=COLORS['text_muted']),
+        ),
+        yaxis=dict(
+            gridcolor=COLORS['border'],
+            showgrid=True,
+            gridwidth=1,
+            tickfont=dict(size=10, color=COLORS['text_muted']),
+            side='right',
+        ),
+        hovermode='x unified',
+    )
+
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+
+def render_financials_card(fin_data: Dict[str, Any]):
+    """Render Financials bento card."""
+    eps_actual = fin_data.get('eps_actual', 0)
+    eps_est = fin_data.get('eps_estimated', 0)
+    eps_surprise = fin_data.get('eps_surprise', 0)
+    rev_actual = fin_data.get('revenue_actual', 0)
+    rev_est = fin_data.get('revenue_estimated', 0)
+
+    surprise_class = "positive" if eps_surprise >= 0 else "negative"
+
+    st.markdown(f"""
+    <div class="bento-v2">
+        <div class="bento-header">
+            <span class="bento-title">FINANCIALS</span>
+        </div>
+        <div class="fin-row">
+            <span class="fin-label">ACTUAL</span>
+            <span class="fin-value {surprise_class}">${eps_actual:.2f}</span>
+        </div>
+        <div class="fin-row">
+            <span class="fin-label">EST.</span>
+            <span class="fin-value">${eps_est:.2f}</span>
+        </div>
+        <div class="fin-row">
+            <span class="fin-label">SURPRISE</span>
+            <span class="fin-value {surprise_class}">{'+' if eps_surprise >= 0 else ''}{eps_surprise:.2f}</span>
+        </div>
+        <div class="fin-row">
+            <span class="fin-label">REVENUE</span>
+            <span class="fin-value">${rev_actual:.2f}B</span>
+        </div>
+        <div class="fin-row">
+            <span class="fin-label">EST. REV</span>
+            <span class="fin-value">${rev_est:.2f}B</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_earnings_call_card(result: Dict[str, Any]):
+    """Render Earnings Call bento card."""
+    quarter = result.get("quarter", "N/A")
+    ceo_data = result.get("ceo_analysis", {})
+    has_transcript = ceo_data.get("has_transcript", False)
+
+    if has_transcript:
+        confidence = ceo_data.get("confidence_score", 0.5)
+        sentiment = ceo_data.get("sentiment_score", 0.5)
+
+        if sentiment > 0.6:
+            badge_class = "bullish"
+            badge_text = "BULLISH"
+        elif sentiment < 0.4:
+            badge_class = "bearish"
+            badge_text = "BEARISH"
+        else:
+            badge_class = "neutral"
+            badge_text = "NEUTRAL"
+
+        summary = ceo_data.get("executive_summary", "Click to view transcript...")[:100]
+        if len(summary) >= 100:
+            summary += "..."
+    else:
+        badge_class = "neutral"
+        badge_text = "NO DATA"
+        confidence = 0
+        summary = "No transcript available"
+
+    st.markdown(f"""
+    <div class="bento-v2 clickable" onclick="document.getElementById('transcript-dialog').showModal()">
+        <div class="bento-header">
+            <span class="bento-title">EARNINGS CALL</span>
+            <span class="bento-chevron">›</span>
+        </div>
+        <div class="earnings-quarter">{quarter}</div>
+        <div>
+            <span class="earnings-badge {badge_class}">{badge_text}</span>
+            <span style="font-size: 11px; color: {COLORS['text_muted']}; margin-left: 8px;">{confidence:.0%}</span>
+        </div>
+        <div class="earnings-summary">{summary}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Expander for transcript dialog (Streamlit-native)
+    if has_transcript:
+        with st.expander("📄 View Earnings Call Transcript", expanded=False):
+            st.markdown(f"**{result.get('company_name', result['symbol'])} - {quarter}**")
+            st.markdown(f"**Sentiment:** {badge_text} ({confidence:.0%} confidence)")
+            st.markdown("---")
+
+            executive_summary = ceo_data.get("executive_summary", "No summary available.")
+            st.markdown(f"**Summary:** {executive_summary}")
+            st.markdown("---")
+
+            transcript = result.get("transcript_content", "")
+            if transcript:
+                st.text_area("Full Transcript", transcript, height=300, disabled=True)
+
+
+def render_news_card(news_articles: List[Dict[str, Any]]):
+    """Render Latest News bento card."""
+    items_html = ""
+    for article in news_articles[:6]:
+        score = article.get("score", 0)
+        if score > 0.05:
+            dot_class = "bullish"
+        elif score < -0.05:
+            dot_class = "bearish"
+        else:
+            dot_class = "neutral"
+
+        title = article.get("title", "")[:80]
+        if len(article.get("title", "")) > 80:
+            title += "..."
+
+        items_html += f"""
+        <div class="news-item">
+            <div class="news-dot {dot_class}"></div>
+            <div class="news-title-text">{title}</div>
+        </div>
+        """
+
+    if not items_html:
+        items_html = '<div style="color: ' + COLORS['text_muted'] + '; font-size: 12px; padding: 16px; text-align: center;">No news</div>'
+
+    st.markdown(f"""
+    <div class="bento-v2">
+        <div class="bento-header">
+            <span class="bento-title">LATEST NEWS</span>
+        </div>
+        {items_html}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_insider_activity_card(result: Dict[str, Any]):
+    """Render Insider Activity bento card."""
+    fin_data = result.get("financial_data", {})
+    buys = fin_data.get("insider_buys", 0)
+    sells = fin_data.get("insider_sells", 0)
+    total = buys + sells
+
+    if total > 0:
+        buy_pct = (buys / total) * 100
+        sell_pct = (sells / total) * 100
+    else:
+        buy_pct = 50
+        sell_pct = 50
+
+    st.markdown(f"""
+    <div class="bento-v2 clickable">
+        <div class="bento-header">
+            <span class="bento-title">INSIDER ACTIVITY</span>
+            <span class="bento-chevron">›</span>
+        </div>
+        <div class="insider-bar-v2">
+            <div class="insider-buy-bar" style="width: {buy_pct}%;"></div>
+            <div class="insider-sell-bar" style="width: {sell_pct}%;"></div>
+        </div>
+        <div class="insider-counts">
+            <div class="insider-count buy">BUY: {buys}</div>
+            <div class="insider-count sell">SELL: {sells}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Expander for insider details
+    insider_transactions = result.get("insider_transactions", [])
+    if insider_transactions:
+        with st.expander("📊 View Insider Activity Details", expanded=False):
+            import pandas as pd
+
+            # Group by quarter
+            df = pd.DataFrame(insider_transactions)
+            if not df.empty and 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'], errors='coerce')
+                df['quarter'] = df['date'].dt.to_period('Q').astype(str)
+
+                for quarter in df['quarter'].unique()[:6]:
+                    q_df = df[df['quarter'] == quarter]
+                    q_buys = len(q_df[q_df['transaction'].str.contains('Buy', na=False, case=False)])
+                    q_sells = len(q_df[q_df['transaction'].str.contains('Sell', na=False, case=False)])
+                    total_shares = q_df['shares'].sum()
+
+                    badge = "SELL" if q_sells > q_buys else "BUY" if q_buys > q_sells else "MIXED"
+                    badge_color = COLORS['accent_red'] if q_sells > q_buys else COLORS['accent_green']
+
+                    st.markdown(f"""
+                    <div style="background: {COLORS['bg_card']}; border: 1px solid {COLORS['border']};
+                                border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: {COLORS['text_primary']};">
+                                {quarter} | Buy: {q_buys} Sell: {q_sells}
+                            </span>
+                            <span style="background: rgba({badge_color}, 0.15); color: {badge_color};
+                                        padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">
+                                {badge}
+                            </span>
+                        </div>
+                        <div style="font-size: 11px; color: {COLORS['text_muted']}; margin-top: 4px;">
+                            {total_shares:,.0f} shares
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+
+# =============================================================================
 # MAIN APP
 # =============================================================================
 
 # Render command bar (header)
 render_command_bar()
 
-st.markdown("<div style='padding: 0 24px;'>", unsafe_allow_html=True)
+# Search Section with better layout
+col_search_left, col_search_center, col_search_right = st.columns([1, 3, 1])
 
-# Render search section
-ticker, analyze_button, deep_analysis = render_search()
+with col_search_center:
+    search_col1, search_col2, search_col3 = st.columns([5, 1, 1])
+
+    with search_col1:
+        ticker = st.text_input(
+            "Search",
+            placeholder="Search ticker... ⌘K",
+            label_visibility="collapsed",
+            key="ticker_input"
+        )
+
+    with search_col2:
+        analyze_button = st.button("🎯", type="primary", use_container_width=True, help="Analyze stock")
+
+    with search_col3:
+        deep_analysis = st.checkbox("Deep", help="Run AI agents ($0.02)")
+        st.session_state["deep_reasoning"] = deep_analysis
 
 # Handle analysis
 if analyze_button and ticker:
@@ -827,7 +1486,7 @@ if analyze_button and ticker:
         st.session_state["result"] = result
 
         if deep_analysis:
-            status_text.markdown(f"<p style='text-align: center; color: {COLORS['accent_purple']};'>🤖 Running AI Agent analysis... (30-60 seconds)</p>", unsafe_allow_html=True)
+            status_text.markdown(f"<p style='text-align: center; color: {COLORS['accent_purple']};'>🤖 Running AI Agent analysis...</p>", unsafe_allow_html=True)
             progress_bar.progress(95)
             agent_report = run_agent_analysis(
                 ticker,
@@ -850,132 +1509,67 @@ elif analyze_button and not ticker:
 
 
 # =============================================================================
-# DISPLAY RESULTS - 3-COLUMN COCKPIT LAYOUT
+# DISPLAY RESULTS
 # =============================================================================
 if "result" in st.session_state:
     result = st.session_state["result"]
     fin_data = result.get("financial_data", {})
-    ceo_data = result.get("ceo_analysis", {})
-    scores = result.get("scores", {})
 
-    # 3-COLUMN COCKPIT LAYOUT
-    col_left, col_center, col_right = st.columns([1, 2.5, 1.2])
+    # Ticker Info Strip
+    render_ticker_strip(result)
 
-    # =========================================================================
-    # ZONE B - Left Sidebar (Intelligence Hub)
-    # =========================================================================
-    with col_left:
-        st.markdown('<p class="section-title">THE GOLDEN TRIANGLE</p>', unsafe_allow_html=True)
-        render_radar_chart(scores)
+    # 3-Column Cockpit Layout
+    col_b, col_c, col_d = st.columns([1, 2.2, 1.1])
 
-        st.markdown('<p class="section-title">AI VERDICT</p>', unsafe_allow_html=True)
-        render_prediction_banner(
-            result.get("prediction", "Stagnation"),
-            result.get("confidence", 0.5)
+    # ZONE B - Intelligence Hub (Left)
+    with col_b:
+        st.markdown('<div class="zone-title">INTELLIGENCE HUB</div>', unsafe_allow_html=True)
+
+        # SVG Confidence Ring
+        render_confidence_ring(
+            result.get("confidence", 0.5),
+            result.get("prediction", "Stagnation")
         )
 
-        st.markdown('<p class="section-title">DETECTED ANOMALIES</p>', unsafe_allow_html=True)
+        # AI Analysis Text
+        render_ai_analysis(result)
 
-        # Generate anomaly cards based on analysis
-        anomalies_shown = 0
+    # ZONE C - Market Stage (Center)
+    with col_c:
+        # Chart Header
+        selected_tf = st.session_state.get("chart_timeframe", "1M")
 
-        # CEO Tone anomaly
-        ceo_confidence = ceo_data.get("confidence_score", 0.5)
-        if ceo_confidence < 0.4:
-            render_anomaly_card("CEO Tone", "Nervous", "⚠️", is_warning=True)
-            anomalies_shown += 1
-        elif ceo_confidence > 0.7:
-            render_anomaly_card("CEO Tone", "Confident", "✓", is_warning=False)
-            anomalies_shown += 1
-
-        # EPS anomaly
-        eps_surprise = fin_data.get("eps_surprise", 0)
-        if eps_surprise > 10:
-            render_anomaly_card("Option Flow", "Bullish Divergence", "⚡", is_warning=False)
-            anomalies_shown += 1
-        elif eps_surprise < -10:
-            render_anomaly_card("Earnings Miss", "Significant", "⚠️", is_warning=True)
-            anomalies_shown += 1
-
-        # Social/Retail anomaly
-        social_data = result.get("social_analysis", {})
-        bullish_ratio = social_data.get("bullish_ratio", 0.5)
-        if bullish_ratio > 0.7:
-            render_anomaly_card("Retail Interest", "Spiking", "📈", is_warning=False)
-            anomalies_shown += 1
-        elif bullish_ratio < 0.3:
-            render_anomaly_card("Sentiment", "Bearish", "📉", is_warning=True)
-            anomalies_shown += 1
-
-        if anomalies_shown == 0:
-            st.markdown(f"""
-            <div class="anomaly-card">
-                <div class="anomaly-label">No anomalies detected</div>
-                <div class="anomaly-value neutral" style="color: {COLORS['text_muted']};">Normal</div>
+        st.markdown(f"""
+        <div class="chart-header">
+            <div>
+                <span class="chart-title">{result['symbol']} — {selected_tf}</span>
+                <span class="chart-subtitle">SMA(20) + Projection</span>
             </div>
-            """, unsafe_allow_html=True)
+        </div>
+        """, unsafe_allow_html=True)
 
-    # =========================================================================
-    # ZONE C - Center (Market Stage)
-    # =========================================================================
-    with col_center:
-        # Real-time price update - fetch fresh quote
+        # Timeframe Buttons
+        timeframe_options = {"1W": 7, "1M": 30, "3M": 90, "6M": 180, "1Y": 365}
+
+        if "chart_timeframe" not in st.session_state:
+            st.session_state.chart_timeframe = "1M"
+
+        tf_cols = st.columns(5)
+        for i, tf in enumerate(timeframe_options.keys()):
+            with tf_cols[i]:
+                btn_type = "primary" if st.session_state.chart_timeframe == tf else "secondary"
+                if st.button(tf, key=f"tf_{tf}", use_container_width=True, type=btn_type):
+                    st.session_state.chart_timeframe = tf
+                    st.rerun()
+
+        # Fetch prices based on timeframe
         from src.data_ingestion.fmp_client import FMPClient
         from config.settings import get_settings
 
         settings = get_settings()
         fmp_client = FMPClient(api_key=settings.fmp_api_key)
 
-        # Fetch real-time quote
-        fresh_quote = fmp_client.get_stock_quote(result['symbol'])
-        if fresh_quote:
-            price = fresh_quote.price
-            change = fresh_quote.change
-            change_pct = fresh_quote.change_percentage
-        else:
-            price = result.get('current_price') or 0
-            change = result.get('price_change') or 0
-            change_pct = result.get('price_change_pct') or 0
-
-        change_color = COLORS['accent_green'] if change >= 0 else COLORS['accent_red']
-        change_sign = "+" if change >= 0 else ""
-
-        st.markdown(f"""
-        <div class="ticker-header">
-            <div style="display: flex; align-items: baseline; gap: 16px;">
-                <h1 class="ticker-symbol">{result['symbol']}</h1>
-                <div class="ticker-price">
-                    <span class="price-value">${price:,.2f}</span>
-                    <span class="price-change" style="color: {change_color};">
-                        ∿ {change_sign}{change_pct:.2f}% today
-                    </span>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Functional timeframe buttons
-        timeframe_options = {"1D": 1, "5D": 5, "1M": 30, "3M": 90, "6M": 180, "YTD": 365, "1Y": 365, "5Y": 1825}
-
-        # Initialize timeframe in session state
-        if "chart_timeframe" not in st.session_state:
-            st.session_state.chart_timeframe = "3M"
-
-        # Create button columns
-        tf_cols = st.columns(7)
-        timeframes = ["1D", "5D", "1M", "3M", "6M", "1Y", "5Y"]
-
-        for i, tf in enumerate(timeframes):
-            with tf_cols[i]:
-                if st.button(tf, key=f"tf_{tf}", use_container_width=True,
-                           type="primary" if st.session_state.chart_timeframe == tf else "secondary"):
-                    st.session_state.chart_timeframe = tf
-                    st.rerun()
-
-        # Get historical prices based on selected timeframe
-        selected_tf = st.session_state.chart_timeframe
-        days = timeframe_options.get(selected_tf, 90)
-
+        days = timeframe_options.get(st.session_state.chart_timeframe, 30)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
 
@@ -988,163 +1582,79 @@ if "result" in st.session_state:
         except:
             prices = result.get("price_history", [])
 
-        # Price chart
+        # Render chart
         if prices:
-            render_price_chart(prices, result["symbol"], selected_tf)
+            render_price_chart(prices, result["symbol"], st.session_state.chart_timeframe)
+        else:
+            st.markdown("""
+            <div class="empty-chart">
+                <div class="empty-chart-text">Search a ticker to load chart</div>
+                <div class="empty-chart-hint">⌘K to open search</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # =========================================================================
-    # ZONE D - Right Sidebar (Financial Bento)
-    # =========================================================================
-    with col_right:
-        st.markdown('<p class="section-title">FUNDAMENTAL CORE</p>', unsafe_allow_html=True)
+    # ZONE D - Financial Intel (Right)
+    with col_d:
+        st.markdown('<div class="zone-title">FINANCIAL INTEL</div>', unsafe_allow_html=True)
 
-        # EPS Bento Card
-        render_eps_bento(fin_data)
+        # Financials Card
+        render_financials_card(fin_data)
 
-        # Revenue Bento Card
-        render_revenue_bento(fin_data)
+        # Earnings Call Card
+        render_earnings_call_card(result)
 
-        # Insider Activity Bar
-        render_insider_bar(fin_data)
+        # Latest News Card
+        render_news_card(result.get("news_articles", []))
 
-        # Price Target Gauge
-        render_price_target_gauge(
-            result.get("current_price", 0),
-            fin_data.get("price_target", 0)
-        )
+        # Insider Activity Card
+        render_insider_activity_card(result)
 
-        # System status
+else:
+    # Empty state - show placeholder
+    col_b, col_c, col_d = st.columns([1, 2.2, 1.1])
+
+    with col_b:
+        st.markdown('<div class="zone-title">INTELLIGENCE HUB</div>', unsafe_allow_html=True)
+
+        # Empty confidence ring
         st.markdown(f"""
-        <div class="system-status">
-            SYSTEM STATUS: OPERATIONAL<br>
-            LAST UPDATED: {datetime.now().strftime("%I:%M:%S %p")}
+        <div class="confidence-ring-container">
+            <div style="position: relative; width: 140px; height: 140px;">
+                <svg class="confidence-ring-svg" viewBox="0 0 140 140">
+                    <circle class="ring-track" cx="70" cy="70" r="60"/>
+                </svg>
+                <div class="ring-center">
+                    <div class="ring-percentage" style="color: {COLORS['accent_red']};">0%</div>
+                    <div class="ring-label">CONFIDENCE</div>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
-    # =========================================================================
-    # DETAILED TABS (Below cockpit)
-    # =========================================================================
-    st.markdown("---")
-
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📝 Summary",
-        "📊 Detailed Financials",
-        "🎤 CEO Analysis",
-        "📰 News & Sentiment"
-    ])
-
-    with tab1:
-        eps_s = fin_data.get("eps_surprise", 0)
-        rev_s = fin_data.get("revenue_surprise", 0)
-
+    with col_c:
         st.markdown(f"""
-        **{result['symbol']}** reported earnings with an EPS **{'beat' if eps_s > 0 else 'miss'}** of
-        **{abs(eps_s):.1f}%** and revenue **{'beat' if rev_s > 0 else 'miss'}** of **{abs(rev_s):.1f}%**.
+        <div class="empty-chart" style="height: 400px;">
+            <div class="empty-chart-text">Search a ticker to load chart</div>
+            <div class="empty-chart-hint">⌘K to open search</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        CEO tone analysis indicates **{ceo_data.get('tone_summary', 'neutral')}** sentiment.
+    with col_d:
+        st.markdown('<div class="zone-title">FINANCIAL INTEL</div>', unsafe_allow_html=True)
 
-        The Golden Triangle weighted score is **{scores.get('weighted_total', 0):.1f}/10**.
-        """)
-
-        # Key metrics grid
-        st.markdown("#### Key Metrics")
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("EPS Actual", f"${fin_data.get('eps_actual', 0):.2f}")
-        with col2:
-            st.metric("Revenue", f"${fin_data.get('revenue_actual', 0):.2f}B")
-        with col3:
-            st.metric("Gross Margin", f"{fin_data.get('gross_margin', 0):.1f}%")
-        with col4:
-            pt = fin_data.get('price_target', 0)
-            st.metric("Price Target", f"${pt:.2f}" if pt else "N/A")
-
-    with tab2:
-        # Insider transactions table
-        insider_transactions = result.get("insider_transactions", [])
-        if insider_transactions:
-            import pandas as pd
-            st.markdown("#### Insider Transactions")
-            df = pd.DataFrame(insider_transactions)
-            df["value"] = df["value"].apply(lambda x: f"${x:,.0f}" if x > 0 else "-")
-            df["price"] = df["price"].apply(lambda x: f"${x:.2f}" if x and x > 0 else "-")
-            df["shares"] = df["shares"].apply(lambda x: f"{x:,.0f}" if x else "-")
-            df_display = df.rename(columns={
-                "date": "Date", "name": "Insider", "transaction": "Type",
-                "shares": "Shares", "price": "Price", "value": "Value"
-            })[["Date", "Insider", "Type", "Shares", "Price", "Value"]]
-            st.dataframe(df_display, use_container_width=True, hide_index=True)
-
-    with tab3:
-        if ceo_data.get("has_transcript"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Confidence Score", f"{ceo_data.get('confidence_score', 0.5):.0%}")
-                st.metric("Guidance Sentiment", f"{ceo_data.get('guidance_sentiment', 0.5):.0%}")
-            with col2:
-                st.metric("Sentiment Score", f"{ceo_data.get('sentiment_score', 0.5):.0%}")
-                st.metric("Uncertainty Ratio", f"{ceo_data.get('uncertainty_ratio', 0.2):.0%}")
-
-            st.markdown(f"**Overall Tone:** {ceo_data.get('tone_summary', 'Neutral')}")
-            st.markdown("---")
-            st.markdown("#### Executive Summary")
-            executive_summary = ceo_data.get('executive_summary', 'No summary available.')
+        for title in ["EPS", "EARNINGS CALL", "LATEST NEWS", "INSIDER ACTIVITY"]:
             st.markdown(f"""
-            <div class="bento-card">
-                <p style="color: {COLORS['text_secondary']}; line-height: 1.8; margin: 0;">
-                    {executive_summary}
-                </p>
+            <div class="bento-v2">
+                <div class="bento-header">
+                    <span class="bento-title">{title}</span>
+                </div>
+                <div style="color: {COLORS['text_muted']}; font-size: 12px; text-align: center; padding: 20px;">
+                    No data
+                </div>
             </div>
             """, unsafe_allow_html=True)
-        else:
-            st.info("No earnings transcript available for this quarter.")
-
-    with tab4:
-        social = result.get("social_analysis", {})
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Articles Analyzed", social.get("news_count", 0))
-        with col2:
-            st.metric("Bullish Ratio", f"{social.get('bullish_ratio', 0.5):.0%}")
-        with col3:
-            st.metric("Bearish Ratio", f"{social.get('bearish_ratio', 0.2):.0%}")
-
-        st.markdown("---")
-        news_articles = result.get("news_articles", [])
-        if news_articles:
-            for article in news_articles:
-                render_news_card(article)
-        else:
-            st.info("No news articles found for this stock.")
-
-    # Agent report section
-    if "agent_report" in st.session_state:
-        st.markdown("---")
-        st.markdown('<p class="section-title">🤖 AI AGENT DEEP ANALYSIS</p>', unsafe_allow_html=True)
-        agent_report = st.session_state["agent_report"]
-        if agent_report.startswith("Error") or agent_report.startswith("CrewAI") or agent_report.startswith("Agent"):
-            st.warning(agent_report)
-        else:
-            st.markdown(f"""
-            <div class="bento-card">
-                {agent_report}
-            </div>
-            """, unsafe_allow_html=True)
-            st.caption("Generated by CrewAI agents: Scout Agent + Social Listener + Fusion Agent")
 
 
-# Close main content div
-st.markdown("</div>", unsafe_allow_html=True)
-
-# =============================================================================
-# FOOTER
-# =============================================================================
+# Footer Disclaimer
 st.markdown("---")
 show_disclaimer_footer()
-
-# Powered by badge with system status
-st.markdown(f"""
-<div class="system-status">
-    Powered by FMP API • OpenAI GPT-4 • CrewAI
-</div>
-""", unsafe_allow_html=True)

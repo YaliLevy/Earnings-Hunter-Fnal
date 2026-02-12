@@ -41,6 +41,10 @@ class AnalysisResult:
     features: Dict[str, float]
     analyzed_at: str
     disclaimer: str
+    # Raw data for frontend display
+    transcript_content: Optional[str] = None
+    news_articles: Optional[list] = None
+    insider_transactions: Optional[list] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -171,7 +175,51 @@ class EarningsOrchestrator:
         ceo_summary = self._build_ceo_summary(ceo_analysis, data.get("transcript"))
         social_summary = self._build_social_summary(data.get("stock_news", []))
 
-        # Step 8: Create result
+        # Step 8: Prepare raw data for frontend
+        # Convert news articles to dicts with sentiment scores
+        news_articles_raw = []
+        for news in data.get("stock_news", []):
+            text = f"{news.title}. {news.text}" if hasattr(news, 'text') and news.text else news.title
+            sentiment_result = self.sentiment_extractor.analyze_text(text)
+            score = sentiment_result.get("combined_sentiment", 0)
+            news_articles_raw.append({
+                "title": news.title,
+                "text": news.text if hasattr(news, 'text') else "",
+                "url": news.url if hasattr(news, 'url') else None,
+                "published_date": str(news.published_date) if hasattr(news, 'published_date') else None,
+                "site": news.site if hasattr(news, 'site') else None,
+                "score": score,
+                "sentiment": "bullish" if score > 0.05 else "bearish" if score < -0.05 else "neutral"
+            })
+
+        # Convert insider transactions to dicts
+        insider_transactions_raw = []
+        for trade in data.get("insiders", []):
+            trade_type = "BUY" if trade.is_purchase else "SELL" if trade.is_sale else "OTHER"
+            insider_transactions_raw.append({
+                "date": str(trade.transaction_date),
+                "reporter": trade.reporting_name or "Unknown",
+                "transaction": trade.transaction_type,
+                "shares": trade.securities_transacted,
+                "price": trade.price,
+                "value": trade.transaction_value,
+                "type": trade_type
+            })
+
+        # Add insider counts to financial summary
+        buys = sum(1 for t in insider_transactions_raw if t["type"] == "BUY")
+        sells = sum(1 for t in insider_transactions_raw if t["type"] == "SELL")
+        financial_summary["insider_buys"] = buys
+        financial_summary["insider_sells"] = sells
+
+        # Add quote data to financial summary
+        if data.get("quote"):
+            financial_summary["volume"] = data["quote"].volume
+            financial_summary["price_change"] = data["quote"].change
+            financial_summary["price_change_pct"] = data["quote"].change_percentage
+            financial_summary["company_name"] = data["quote"].name
+
+        # Step 9: Create result
         result = AnalysisResult(
             symbol=symbol,
             earnings_date=earnings_date,
@@ -186,7 +234,11 @@ class EarningsOrchestrator:
             research_insight=None,  # Will be filled by InsightGenerator
             features=features,
             analyzed_at=datetime.now().isoformat(),
-            disclaimer=self.disclaimer
+            disclaimer=self.disclaimer,
+            # Raw data for frontend
+            transcript_content=data.get("transcript"),
+            news_articles=news_articles_raw,
+            insider_transactions=insider_transactions_raw
         )
 
         # Cache result
