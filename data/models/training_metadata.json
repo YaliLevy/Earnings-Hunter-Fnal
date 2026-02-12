@@ -1,5 +1,5 @@
 {
-  "training_date": "2026-02-06T16:20:56.780550",
+  "training_date": "2026-02-12T23:29:51.420020",
   "data_path": "data/training/training_data_20260206_124508.csv",
   "num_samples": 1050,
   "num_features": 48,
@@ -72,6 +72,15 @@
       "f1_weighted": 0.5062069315890322
     },
     {
+      "model": "lightgbm",
+      "cv_accuracy_mean": 0.5142857142857143,
+      "cv_accuracy_std": 0.027479120088101917,
+      "train_accuracy": 1.0,
+      "precision_weighted": 1.0,
+      "recall_weighted": 1.0,
+      "f1_weighted": 1.0
+    },
+    {
       "model": "random_forest",
       "cv_accuracy_mean": 0.51,
       "cv_accuracy_std": 0.024159335036125367,
@@ -114,6 +123,10 @@
     },
     {
       "Model": "xgboost",
+      "Test Accuracy": "0.0000"
+    },
+    {
+      "Model": "lightgbm",
       "Test Accuracy": "0.0000"
     }
   ]
