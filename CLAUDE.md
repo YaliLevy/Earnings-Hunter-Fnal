@@ -1,121 +1,100 @@
 # CLAUDE.md - Project Memory & Progress Tracker
 
 > **IMPORTANT**: This file is the project's memory. Update it after EVERY change!
-> Last Updated: 2026-02-09 (Single-Page App + Bug Fixes)
+> Last Updated: 2026-02-13 (React Frontend + FastAPI Backend)
 
 ## Project Overview
 **Name:** The Earnings Hunter
 **Goal:** Multi-agent SaaS for earnings analysis using Golden Triangle (40% Financial + 35% CEO Tone + 25% Social)
-**Status:** COMPLETE - Ready for testing
+**Status:** PRODUCTION - React + FastAPI Architecture
 **Data Source:** FMP API ONLY (no Reddit/PRAW)
 
 ---
 
-## CRITICAL CHANGE: Social Sentiment → Stock News + NLP
+## MAJOR ARCHITECTURE CHANGE: Streamlit → React + FastAPI
 
 ### Timeline:
-1. **2026-02-05**: Reddit/PRAW → FMP Social Sentiment API
-2. **2026-02-09**: FMP Social Sentiment API (broken) → Stock News + NLP Analysis
+1. **2026-02-05**: Initial Streamlit multi-page app
+2. **2026-02-09**: Converted to single-page Streamlit app
+3. **2026-02-13**: **Complete rewrite to React + FastAPI architecture**
 
-### Current Architecture (2026-02-09):
-| Component | Source | Method |
-|-----------|--------|--------|
-| Financial Data | FMP `/stable/` API | Direct API calls |
-| CEO Tone | FMP Transcripts | NLP analysis (VADER + TextBlob) |
-| **Social Sentiment** | **FMP Stock News** | **NLP analysis (VADER + TextBlob)** |
+### Current Architecture (2026-02-13):
 
-### Why Stock News + NLP?
-FMP's social sentiment endpoints return 403/404 errors:
-- ❌ `social-sentiment` (404)
-- ❌ `historical-social-sentiment` (403)
-- ❌ `stock-sentiment-rss-feed` (403)
-- ❌ `social-sentiments-trending` (403)
-- ❌ `social-sentiments-change` (403)
-- ❌ `institutional-holder` (403)
-- ❌ `analyst-stock-recommendations` (403)
-
-**Solution:** Use `news/stock-latest` endpoint + VADER/TextBlob NLP
-
-### Benefits:
-- ✅ Works with current FMP subscription
-- ✅ No additional API keys needed
-- ✅ High-quality sentiment from professional news sources
-- ✅ VADER + TextBlob combined analysis (60% VADER + 40% TextBlob)
+```
+┌─────────────────────────────────────────┐
+│      React Frontend (Vite + TS)         │
+│  - Institutional Cybernetics Design     │
+│  - Real-time data visualization         │
+│  - Recharts for charts                  │
+│  - Tailwind CSS + Framer Motion         │
+└─────────────────────────────────────────┘
+                  ↓ HTTP/REST
+┌─────────────────────────────────────────┐
+│         FastAPI Backend (Python)        │
+│  - /api/analyze/{symbol}                │
+│  - /api/quote/{symbol}                  │
+│  - /api/historical/{symbol}             │
+│  - /api/deep-analysis/{symbol}          │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│    Existing ML Pipeline (Preserved)     │
+│  - EarningsOrchestrator                 │
+│  - FeaturePipeline (48 features)        │
+│  - 5 ML Models + Consensus              │
+│  - TranscriptAnalyzer (NLP)             │
+│  - SentimentFeatureExtractor (NLP)      │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│          FMP API (/stable/)             │
+└─────────────────────────────────────────┘
+```
 
 ---
 
 ## File Creation Progress
 
-### Phase 0: Project Setup
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 0 | CLAUDE.md | ✅ Done | Project memory file |
+### Phase 0-7: Original Python/Streamlit (COMPLETED)
+All original files completed (see previous version for details)
 
-### Phase 1: Foundation
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 1 | requirements.txt | ✅ Done | xgboost, lightgbm, tqdm (NO praw) |
-| 2 | .gitignore | ✅ Done | |
-| 3 | .env.example | ✅ Done | FMP + OpenAI only (no Reddit) |
-| 4 | config/settings.py | ✅ Done | Pydantic BaseSettings + Constants |
-| 5 | src/utils/logger.py | ✅ Done | LoggerMixin included |
-| 6 | src/utils/cache.py | ✅ Done | 24hr cache with stats |
+### Phase 8: React Frontend (NEW - 2026-02-13)
 
-### Phase 2: Data Ingestion
 | # | File | Status | Notes |
 |---|------|--------|-------|
-| 7 | ~~rate_limiter.py~~ | ❌ DELETED | Was Reddit only |
-| 8 | src/data_ingestion/validators.py | ✅ Done | StockNews, EarningsData, etc. |
-| 9 | src/data_ingestion/fmp_client.py | ✅ Updated | `/stable/` API, `news/stock-latest` for news |
-| 10 | ~~reddit_client.py~~ | ❌ DELETED | Replaced by FMP |
+| 39 | frontend/package.json | ✅ Done | React 18, TypeScript, Vite, Tailwind |
+| 40 | frontend/tailwind.config.js | ✅ Done | Institutional Cybernetics color palette |
+| 41 | frontend/vite.config.ts | ✅ Done | Proxy to backend on :8000 |
+| 42 | frontend/src/types/index.ts | ✅ Done | TypeScript interfaces matching API |
+| 43 | frontend/src/services/api.ts | ✅ Done | API client with error handling |
+| 44 | frontend/src/components/LegalDisclaimer.tsx | ✅ Done | Radix UI Dialog |
+| 45 | frontend/src/components/CommandBar.tsx | ✅ Done | Ticker search with icon |
+| 46 | frontend/src/components/TickerStrip.tsx | ✅ Done | Slot machine animation |
+| 47 | frontend/src/components/SlotNumber.tsx | ✅ Done | Rolling number animation |
+| 48 | frontend/src/components/IntelligenceHub/ConfidenceRing.tsx | ✅ Done | SVG circular progress |
+| 49 | frontend/src/components/IntelligenceHub/GoldenTriangleRadar.tsx | ✅ Done | Recharts RadarChart |
+| 50 | frontend/src/components/IntelligenceHub/AIAnalysis.tsx | ✅ Done | Deep analysis panel |
+| 51 | frontend/src/components/IntelligenceHub/index.tsx | ✅ Done | Main hub component |
+| 52 | frontend/src/components/MarketStage/PriceChart.tsx | ✅ Done | Recharts AreaChart |
+| 53 | frontend/src/components/MarketStage/TimeframePills.tsx | ✅ Done | Tab selector |
+| 54 | frontend/src/components/MarketStage/index.tsx | ✅ Done | Market stage container |
+| 55 | frontend/src/components/FinancialIntel/FinancialsCard.tsx | ✅ Done | EPS/Revenue metrics |
+| 56 | frontend/src/components/FinancialIntel/EarningsCallCard.tsx | ✅ Done | CEO tone display |
+| 57 | frontend/src/components/FinancialIntel/NewsCard.tsx | ✅ Done | News sentiment |
+| 58 | frontend/src/components/FinancialIntel/InsiderActivityCard.tsx | ✅ Done | Insider trades table |
+| 59 | frontend/src/components/FinancialIntel/index.tsx | ✅ Done | Financial intel grid |
+| 60 | frontend/src/components/FooterDisclaimer.tsx | ✅ Done | Footer component |
+| 61 | frontend/src/App.tsx | ✅ Done | Main app with state management |
+| 62 | frontend/index.html | ✅ Done | HTML entry point |
 
-### Phase 3: Feature Engineering
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 11 | src/feature_engineering/financial_features.py | ✅ Done | 40% weight |
-| 12 | src/feature_engineering/sentiment_features.py | ✅ Done | **VADER + TextBlob NLP engine** |
-| 13 | src/feature_engineering/transcript_analyzer.py | ✅ Done | 35% weight - CEO tone |
-| 14 | src/feature_engineering/social_features.py | ✅ Updated | **Stock News + NLP** (25% weight) |
-| 15 | src/feature_engineering/feature_pipeline.py | ✅ Updated | Uses `stock_news` parameter |
+### Phase 9: FastAPI Backend (NEW - 2026-02-13)
 
-### Phase 4: ML Pipeline
 | # | File | Status | Notes |
 |---|------|--------|-------|
-| 16 | src/ml/model_comparison.py | ✅ Done | Multi-model comparison |
-| 17 | src/ml/trainer.py | ✅ Done | 5% threshold |
-| 18 | src/ml/predictor.py | ✅ Done | Prediction modes |
-
-### Phase 5: Agents
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 19 | src/agents/config/agents.yaml | ✅ Done | Agent definitions |
-| 20 | src/agents/config/tasks.yaml | ✅ Done | Task definitions |
-| 21 | src/agents/tools/fmp_tools.py | ✅ Done | FMP tools (social endpoints may fail) |
-| 22 | ~~reddit_tools.py~~ | ❌ DELETED | Replaced by FMP tools |
-| 23 | src/agents/orchestrator.py | ✅ Updated | Uses `stock_news` + NLP for social |
-| 24 | src/agents/insight_generator.py | ✅ Done | Research insight |
-| 25 | src/agents/crew.py | ✅ Done | CrewAI + GPT-4o-mini |
-
-### Phase 6: Streamlit Dashboard (ONEPAGER)
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 26 | app/components/disclaimer.py | ✅ Done | Modal, banner, footer |
-| 27 | app/components/charts.py | ✅ Done | Plotly visualizations |
-| 28 | app/components/metrics.py | ✅ Done | KPI cards |
-| 29 | app/main.py | ✅ **REWRITTEN** | **Single-Page App (Onepager)** - All analysis in one page |
-| 30 | ~~app/pages/1_Dashboard.py~~ | ❌ DELETED | Merged into main.py |
-| 31 | ~~app/pages/2_Stock_Analysis.py~~ | ❌ DELETED | Merged into main.py |
-| 32 | ~~app/pages/3_Historical.py~~ | ❌ DELETED | Merged into main.py |
-
-### Phase 7: Scripts & DevOps
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 33 | scripts/collect_training_data.py | ✅ Done | Real data |
-| 34 | scripts/train_model.py | ✅ Done | Multi-model |
-| 35 | scripts/run_analysis.py | ✅ Done | CLI |
-| 36 | Dockerfile | ✅ Done | Python 3.11-slim |
-| 37 | docker-compose.yml | ✅ Done | Deployment |
-| 38 | .dockerignore | ✅ Done | |
+| 63 | api/main.py | ✅ Done | FastAPI app with CORS |
+| 64 | api/routers/analysis.py | ✅ Done | Main analysis endpoint |
+| 65 | api/routers/quote.py | ✅ Done | Real-time quote endpoint |
+| 66 | api/routers/historical.py | ✅ Done | Historical prices endpoint |
 
 ---
 
@@ -124,247 +103,344 @@ FMP's social sentiment endpoints return 403/404 errors:
 
 | Timestamp | Action | Files Changed | Notes |
 |-----------|--------|---------------|-------|
-| 2026-02-09 | **CONVERTED to ONEPAGER** | app/main.py (rewritten), app/pages/* (deleted) | Single-page app, fixed Golden Triangle, news display, agent report, price chart |
-| 2026-02-09 | **FIXED** API Endpoints + NLP Sentiment | fmp_client.py, orchestrator.py, social_features.py, feature_pipeline.py | Stock news + VADER/TextBlob for social sentiment |
-| 2026-02-09 | **ADDED** CrewAI Integration | crew.py, 2_Stock_Analysis.py | 3 agents, Deep Analysis checkbox, GPT-4o-mini |
-| 2026-02-05 | **MIGRATED** Reddit → FMP Social | Multiple files | Deleted reddit_client, rate_limiter, reddit_tools |
+| 2026-02-13 | **RETRAINED ML MODELS** | data/models/*.pkl | Fixed numpy/sklearn version mismatch |
+| 2026-02-13 | **FIXED DATA FLOW** | orchestrator.py, analysis.py | Added transcript_content, news_articles, insider_transactions to API |
+| 2026-02-13 | **CREATED FASTAPI BACKEND** | api/main.py, api/routers/*.py | REST API wrapping ML pipeline |
+| 2026-02-13 | **CREATED REACT FRONTEND** | frontend/src/**/*.tsx | Complete UI rewrite with TypeScript |
+| 2026-02-13 | **ARCHITECTURE REDESIGN** | Multiple files | Streamlit → React + FastAPI |
+| 2026-02-09 | **CONVERTED to ONEPAGER** | app/main.py (rewritten), app/pages/* (deleted) | Single-page Streamlit app |
+| 2026-02-09 | **FIXED** API Endpoints + NLP Sentiment | fmp_client.py, orchestrator.py | Stock news + VADER/TextBlob |
+| 2026-02-09 | **ADDED** CrewAI Integration | crew.py | 3 agents, GPT-4o-mini |
+| 2026-02-05 | **MIGRATED** Reddit → FMP Social | Multiple files | Deleted reddit_client, rate_limiter |
 | 2026-02-05 | Created Docker files | Dockerfile, docker-compose.yml | Deployment ready |
 | 2026-02-05 | Created scripts | scripts/*.py | Data collection, training |
 | 2026-02-05 | Created agents module | src/agents/*.py | CrewAI crew |
-| 2026-02-05 | Created Streamlit dashboard | app/**/*.py | All pages |
 | 2026-02-05 | Created ML module | src/ml/*.py | Multi-model |
 | 2026-02-04 | Created feature engineering | src/feature_engineering/*.py | Golden Triangle |
 | 2026-02-04 | Created data ingestion | src/data_ingestion/*.py | FMP client |
-| 2026-02-04 | Created foundation files | config/, src/utils/ | Settings, logger |
 
 ---
 
-## Single-Page App (Onepager) - 2026-02-09
+## React Frontend Architecture
 
-### Why Onepager?
-- Simpler user experience - no navigation needed
-- All analysis on one page
-- Mobile-friendly design
-- Faster loading
+### Design System
+Based on "Institutional Cybernetics" aesthetic:
 
-### Bugs Fixed in Onepager:
-| Bug | Problem | Solution |
-|-----|---------|----------|
-| Golden Triangle HTML | Displayed raw HTML code instead of progress bars | Use native Streamlit `st.metric()` + `st.progress()` |
-| News Articles | Not displaying analyzed articles | Store articles in `result["news_articles"]`, display with sentiment icons |
-| Agent Report | Not rendered properly | Added `unsafe_allow_html=True` to `st.markdown()` |
-| Price Chart | Empty/not loading | Fetch historical prices from FMP, create Plotly candlestick |
-| Multi-Page Navigation | Confusing for users | Converted to single-page app |
-
-### Key Features of Onepager:
-- Search bar with ticker input
-- Prediction banner (Growth/Risk/Stagnation)
-- Golden Triangle scores with native progress bars
-- 3-month candlestick price chart
-- Tabbed content (Summary, Financial, CEO Tone, News)
-- Optional AI Agent deep analysis
-- Disclaimer footer
-
----
-
-## Decisions Made
-
-1. **FMP Ultimate** - No rate limiting (unlimited API access)
-2. **FMP `/stable/` API** - Most reliable endpoints, avoid v3/v4
-3. **Stock News + NLP** - Social sentiment from news (VADER 60% + TextBlob 40%)
-4. **Target Threshold** - 5% for Growth/Risk classification
-5. **Training Data** - Real historical data only
-6. **Caching** - 24-hour cache for analysis results
-7. **Multi-Model** - Train 5 models, use best/consensus
-8. **Disclaimer** - Modal + Banner + Footer on EVERY page
-9. **CrewAI** - Optional deep analysis using GPT-4o-mini (cost-efficient)
-10. **No institutional-holder** - Endpoint returns 403, removed from pipeline
-
----
-
-## CrewAI Agents (Phase 6 - Added 2026-02-09)
-
-### Architecture: Hybrid Pipeline
-```
-Fast Pipeline (always runs, FREE)     Deep Analysis (optional, ~$0.01-0.02)
-         |                                         |
-   FMP Data Fetch                            CrewAI Agents
-   TranscriptAnalyzer                        Scout Agent
-   ML Models                                 Social Listener
-   Golden Triangle                           Fusion Agent
-         |                                         |
-   Basic Result (<10 sec)              Research Report (30-60 sec)
+**Color Palette:**
+```javascript
+colors: {
+  cyber: {
+    bg: '#0a0e1a',        // Deep space background
+    surface: '#111827',   // Card background
+    border: '#1f2937',    // Borders
+    accent: '#3b82f6',    // Primary blue
+    success: '#10b981',   // Green (Growth)
+    warning: '#f59e0b',   // Amber (Stagnation)
+    danger: '#ef4444',    // Red (Risk)
+    muted: '#6b7280',     // Gray text
+  }
+}
 ```
 
-### Three AI Agents
-
-| Agent | Role | Weight | Tools |
-|-------|------|--------|-------|
-| **Scout Agent** | Financial Data + CEO Tone Analyst | 75% | `fetch_earnings_surprises`, `fetch_income_statement`, `fetch_analyst_data`, `fetch_insider_activity`, `fetch_earnings_transcript` |
-| **Social Listener** | Street Sentiment Analyst | 25% | `fetch_stock_news` (social endpoints broken) |
-| **Fusion Agent** | Chief Investment Analyst (Synthesizer) | - | No tools (receives other agents' output + ML prediction) |
-
-> ⚠️ **Note:** Social sentiment APIs (`fetch_social_sentiment`, etc.) return 403/404. The pipeline uses `news/stock-latest` + NLP instead.
-
-### Agent Workflow
+### Component Structure
 ```
-User Request: "Analyze NVDA"
-         |
-   [Fast Pipeline - FREE]
-   FMP Data + ML Prediction
-         |
-   Basic Result Ready
-         |
-   [If Deep Analysis checked]
-         |
-   Scout Agent
-   - Fetches financial data
-   - Analyzes earnings transcript
-   - Generates financial + CEO tone report
-         |
-   Social Listener Agent
-   - Fetches social sentiment
-   - Analyzes Twitter/StockTwits
-   - Generates sentiment report
-         |
-   Fusion Agent
-   - Receives all reports + ML prediction
-   - Applies Golden Triangle weights
-   - Generates comprehensive research insight
-         |
-   AI Agent Report
+App.tsx (Main state management)
+├── LegalDisclaimer (Radix Dialog)
+├── CommandBar (Search input)
+├── TickerStrip (Animated ticker + slot numbers)
+├── IntelligenceHub
+│   ├── ConfidenceRing (SVG circular progress)
+│   ├── GoldenTriangleRadar (Recharts radar)
+│   └── AIAnalysis (Deep analysis panel)
+├── MarketStage
+│   ├── TimeframePills (Tab selector)
+│   └── PriceChart (Recharts area chart)
+├── FinancialIntel
+│   ├── FinancialsCard (EPS/Revenue)
+│   ├── EarningsCallCard (CEO tone)
+│   ├── NewsCard (Sentiment)
+│   └── InsiderActivityCard (Trades table)
+└── FooterDisclaimer
 ```
 
-### Cost & Performance
-| Analysis Type | Time | Cost | Use Case |
-|--------------|------|------|----------|
-| Basic (Fast Pipeline) | ~10 sec | FREE | Quick checks, most users |
-| Deep (CrewAI Agents) | 30-60 sec | ~$0.01-0.02 | Detailed research reports |
-
-### Files Changed for CrewAI Integration
-- `src/agents/crew.py` - Removed Reddit import, uses FMP tools, GPT-4o-mini model
-- `app/pages/2_Stock_Analysis.py` - Added "Deep Analysis" checkbox, `run_agent_analysis()` function, "AI Agent Report" tab
-
----
-
-## API Keys Required
-- [x] FMP_API_KEY (Ultimate subscription)
-- [x] OPENAI_API_KEY
-- [ ] ~~REDDIT_CLIENT_ID~~ (NOT NEEDED - using FMP)
-- [ ] ~~REDDIT_CLIENT_SECRET~~ (NOT NEEDED - using FMP)
+### Key Features
+- **Type Safety**: Full TypeScript coverage
+- **State Management**: React useState hooks
+- **API Client**: Axios with error handling
+- **Animations**: Framer Motion for micro-interactions
+- **Charts**: Recharts (AreaChart, RadarChart)
+- **UI Components**: Radix UI primitives
+- **Styling**: Tailwind CSS with custom design tokens
 
 ---
 
-## FMP API Endpoints (Updated 2026-02-09)
+## FastAPI Backend Architecture
 
-### Working Endpoints ✅
-| Endpoint | API Version | Used For |
-|----------|-------------|----------|
-| `quote` | `/stable/` | Current stock price, market cap |
-| `earnings-surprises` | `/stable/` | EPS/revenue actual vs estimated |
-| `income-statement` | `/stable/` | Financial statements |
-| `analyst-estimates` | `/stable/` | Future EPS/revenue estimates |
-| `price-target` | `/stable/` | Analyst price targets |
-| `insider-trading` | `/stable/` | Insider buy/sell transactions |
-| `earnings-call-transcript` | `/stable/` | CEO tone analysis |
-| `**news/stock-latest**` | `/stable/` | **Stock news for NLP sentiment** |
-| `earnings-calendar` | `/stable/` | Upcoming earnings dates |
-| `historical-price-eod/full` | `/stable/` | Historical prices |
+### Endpoints
 
-### Broken Endpoints ❌ (403/404 errors)
-| Endpoint | Error | Workaround |
-|----------|-------|------------|
-| `social-sentiment` | 404 | Use `news/stock-latest` + NLP |
-| `historical-social-sentiment` | 403 | Use `news/stock-latest` + NLP |
-| `stock-sentiment-rss-feed` | 403 | Use `news/stock-latest` + NLP |
-| `social-sentiments-trending` | 403 | Not needed |
-| `social-sentiments-change` | 403 | Not needed |
-| `institutional-holder` | 403 | Removed from pipeline |
-| `analyst-stock-recommendations` | 403 | Use `analyst-estimates` instead |
+| Endpoint | Method | Purpose | Response Time |
+|----------|--------|---------|---------------|
+| `/api/analyze/{symbol}` | GET | Full analysis + ML prediction | 5-10 sec |
+| `/api/quote/{symbol}` | GET | Real-time quote data | <1 sec |
+| `/api/historical/{symbol}` | GET | Historical prices (90d) | 1-2 sec |
+| `/api/deep-analysis/{symbol}` | POST | CrewAI agent analysis | 30-60 sec |
+
+### Data Flow Fix (2026-02-13)
+
+**Problem:** Frontend wasn't receiving transcript, news, insider data
+
+**Root Cause:** `EarningsOrchestrator` extracted numeric features but discarded raw data
+
+**Solution:**
+1. Added new fields to `AnalysisResult` dataclass:
+   - `transcript_content: Optional[str]`
+   - `news_articles: Optional[list]`
+   - `insider_transactions: Optional[list]`
+
+2. Modified `orchestrator.py` to populate raw data before creating result
+
+3. Updated `analysis.py` to map fields for frontend:
+   - `site` → `source` (news articles)
+   - Added `value` field to insider trades
+
+**Result:** Frontend now displays all data correctly ✅
 
 ---
 
-## Golden Triangle (Updated 2026-02-09)
+## ML Models - Training Data & Performance
+
+### Training Dataset
+- **Source**: Real FMP API data
+- **Size**: 1,050 earnings quarters
+- **Period**: 2021-2026
+- **Symbols**: AAPL, NVDA, MSFT, GOOGL, AMZN, META, TSLA, etc.
+- **Features**: 48 (Financial 31, CEO Tone 17, Social calculated)
+
+### Labels (Based on 5-day post-earnings price change)
+- **Growth**: Price increased > 5%
+- **Risk**: Price decreased > 5%
+- **Stagnation**: Price change between -5% and +5%
+
+### Model Performance (Latest Training: 2026-02-13)
+
+| Model | CV Accuracy | Train Accuracy | F1 Score | Status |
+|-------|-------------|-----------------|----------|--------|
+| **Neural Network (MLP)** | 53.86% | 60.36% | 0.506 | **BEST** ✅ |
+| LightGBM | 51.43% | 100.00% | 1.000 | Overfitting |
+| Random Forest | 51.00% | 95.95% | 0.960 | Overfitting |
+| XGBoost | 50.00% | 100.00% | 1.000 | Severe overfitting |
+| Logistic Regression | 39.86% | 49.52% | 0.510 | Worst |
+
+### Version Fix (2026-02-13)
+**Problem:** Models trained with sklearn 1.6.1, running with 1.8.0
+- Error: `numpy.random._mt19937.MT19937 is not a known BitGenerator`
+
+**Solution:** Retrained all models with current environment
+- sklearn 1.6.1
+- numpy 1.26.4
+- Models now load and predict correctly ✅
+
+---
+
+## Golden Triangle (Unchanged)
 
 | Vector | Weight | Source | Features |
 |--------|--------|--------|----------|
 | Hard Data | 40% | FMP `/stable/` API | EPS/revenue surprises, margins, analyst consensus, insider sentiment |
 | CEO Tone | 35% | FMP Transcripts + NLP | Confidence score, sentiment, guidance, uncertainty (VADER + TextBlob) |
-| Social | 25% | **FMP Stock News + NLP** | News sentiment analyzed via VADER + TextBlob, hype index, bullish/bearish ratio |
+| Social | 25% | **FMP Stock News + NLP** | News sentiment analyzed via VADER + TextBlob |
 
-### Social Sentiment Calculation (NLP-based):
-```python
-# Combined sentiment = 60% VADER compound + 40% TextBlob polarity
-combined = (vader_compound * 0.6) + (textblob_polarity * 0.4)  # Range: -1 to +1
-bullish_pct = (combined + 1) / 2 * 100  # Convert to 0-100%
-```
+**Total Features:** 48
+**ML Models:** 5 (Neural Net is best)
+**Prediction:** Growth / Risk / Stagnation
 
 ---
 
-## Quick Start
+## CrewAI Agents (Optional - Unchanged)
 
+| Agent | Role | Cost |
+|-------|------|------|
+| Scout Agent | Financial + CEO tone | Included |
+| Social Listener | News sentiment | Included |
+| Fusion Agent | Synthesizer | Included |
+| **Total** | Deep Analysis | ~$0.01-0.02 |
+
+**Model:** GPT-4o-mini (cost-efficient)
+**Status:** Optional - user must enable "Deep Analysis"
+
+---
+
+## API Keys Required
+- [x] FMP_API_KEY (Ultimate subscription)
+- [x] OPENAI_API_KEY (for CrewAI only)
+
+---
+
+## FMP API Endpoints (Unchanged)
+
+### Working Endpoints ✅
+- `quote`, `earnings-surprises`, `income-statement`
+- `analyst-estimates`, `price-target`, `insider-trading`
+- `earnings-call-transcript`, `news/stock-latest`
+- `historical-price-eod/full`
+
+### Broken Endpoints ❌
+- `social-sentiment` (404), `historical-social-sentiment` (403)
+- `institutional-holder` (403), `analyst-stock-recommendations` (403)
+
+**Workaround:** Use `news/stock-latest` + NLP for social sentiment
+
+---
+
+## Deployment
+
+### Local Development
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# Terminal 1 - Backend
+python -m uvicorn api.main:app --reload --port 8000
 
-# 2. Set up environment variables
-cp .env.example .env
-# Edit .env with FMP_API_KEY and OPENAI_API_KEY only
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+```
 
-# 3. Run the Streamlit app
-streamlit run app/main.py
-
-# 4. (Optional) Docker
+### Docker (TODO - needs update)
+```bash
 docker-compose up --build
 ```
 
+**Note:** Docker config needs update for React + FastAPI setup
+
 ---
 
-## Project Structure
+## Project Structure (Updated)
 
 ```
 earnings_hunter/
-├── CLAUDE.md              # This file - project memory
-├── requirements.txt       # NO praw, has crewai
-├── .env.example          # FMP + OpenAI only
-├── config/
-│   └── settings.py
-├── src/
+├── api/                       # FastAPI backend (NEW)
+│   ├── main.py
+│   └── routers/
+│       ├── analysis.py
+│       ├── quote.py
+│       └── historical.py
+│
+├── frontend/                  # React frontend (NEW)
+│   ├── src/
+│   │   ├── components/
+│   │   ├── services/api.ts
+│   │   ├── types/index.ts
+│   │   └── App.tsx
+│   ├── tailwind.config.js
+│   ├── vite.config.ts
+│   └── package.json
+│
+├── src/                       # Python ML pipeline (PRESERVED)
 │   ├── data_ingestion/
-│   │   ├── fmp_client.py     # /stable/ API, news/stock-latest
-│   │   └── validators.py     # StockNews, EarningsData, etc.
 │   ├── feature_engineering/
-│   │   ├── financial_features.py   # 40% weight
-│   │   ├── sentiment_features.py   # VADER + TextBlob NLP
-│   │   ├── transcript_analyzer.py  # 35% weight - CEO tone
-│   │   ├── social_features.py      # 25% weight - News + NLP
-│   │   └── feature_pipeline.py     # Golden Triangle orchestration
 │   ├── ml/
-│   │   ├── model_comparison.py
-│   │   ├── trainer.py
-│   │   └── predictor.py
 │   └── agents/
-│       ├── config/
-│       │   ├── agents.yaml
-│       │   └── tasks.yaml
-│       ├── tools/
-│       │   └── fmp_tools.py     # CrewAI tools
-│       ├── orchestrator.py      # Main analysis pipeline
-│       ├── insight_generator.py
-│       └── crew.py              # CrewAI 3-agent system
-├── app/
-│   ├── main.py                # SINGLE-PAGE APP (Onepager) - All functionality here
-│   ├── components/
-│   │   ├── charts.py
-│   │   ├── metrics.py
-│   │   └── disclaimer.py
-│   └── config/
-│       └── theme.py           # Color palette & CSS
+│
+├── config/settings.py
 ├── scripts/
 │   ├── collect_training_data.py
 │   ├── train_model.py
 │   └── run_analysis.py
+│
 ├── data/
-│   └── models/              # Trained ML models
-└── Dockerfile
+│   ├── models/               # 5 trained models (retrained 2026-02-13)
+│   └── training/             # 1,050 earnings quarters
+│
+├── app/                       # Legacy Streamlit (DEPRECATED)
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── CLAUDE.md                  # This file
+└── README.md
 ```
+
+---
+
+## Decisions Made
+
+1. **React + FastAPI** - Modern stack, better UX than Streamlit
+2. **FMP Ultimate** - Unlimited API access
+3. **FMP `/stable/` API** - Most reliable endpoints
+4. **Stock News + NLP** - Social sentiment from news (VADER 60% + TextBlob 40%)
+5. **48 Features** - All extracted by FeaturePipeline, fed to ML
+6. **5 ML Models** - Consensus voting, Neural Net is best
+7. **Real Training Data** - 1,050 quarters from FMP (2021-2026)
+8. **5% Threshold** - Growth/Risk classification
+9. **24-hour Cache** - Analysis results cached
+10. **CrewAI Optional** - User-enabled deep analysis (~$0.01-0.02)
+11. **TypeScript** - Full type safety in frontend
+12. **Tailwind CSS** - Utility-first styling
+13. **Recharts** - Production-ready charts
+
+---
+
+## Known Issues & TODOs
+
+### High Priority
+- [ ] Update Docker config for React + FastAPI
+- [ ] Add deployment guide (Vercel frontend + Python API)
+- [ ] Add loading states in frontend
+- [ ] Error boundary for React app
+
+### Medium Priority
+- [ ] Delete old Streamlit files (app/*)
+- [ ] Add frontend tests
+- [ ] Add API rate limiting
+- [ ] Add caching headers
+
+### Low Priority
+- [ ] Add dark/light mode toggle
+- [ ] Add mobile responsive tweaks
+- [ ] Add export to PDF feature
+- [ ] Add compare multiple stocks
+
+---
+
+## Quick Start (Updated)
+
+```bash
+# 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. Install frontend dependencies
+cd frontend
+npm install
+cd ..
+
+# 3. Setup environment
+cp .env.example .env
+# Edit .env with FMP_API_KEY and OPENAI_API_KEY
+
+# 4. Start backend (Terminal 1)
+python -m uvicorn api.main:app --reload --port 8000
+
+# 5. Start frontend (Terminal 2)
+cd frontend
+npm run dev
+
+# 6. Open browser
+# http://localhost:5173
+```
+
+---
+
+## Success Metrics
+
+- ✅ React frontend rendering correctly
+- ✅ FastAPI backend serving data
+- ✅ ML models making predictions
+- ✅ All 48 features extracted
+- ✅ Transcript content displayed
+- ✅ News articles with sentiment
+- ✅ Insider trades shown
+- ✅ Charts rendering (price, radar)
+- ✅ CrewAI agents available (optional)
+
+---
+
+**Last verified working:** 2026-02-13
+**Next review:** After deployment to production

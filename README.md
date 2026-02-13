@@ -1,185 +1,323 @@
-## The Earnings Hunter
+# The Earnings Hunter
 
-An AI‑powered **earnings analysis dashboard** that combines hard financial data, CEO tone, and news sentiment into a single, modern Streamlit one‑pager.  
-The app implements a **“Golden Triangle”** framework (40% Financials + 35% CEO Tone + 25% Social/News) plus optional multi‑agent deep analysis via CrewAI.
+An AI-powered **earnings analysis platform** that combines hard financial data, CEO tone, and news sentiment into a single, modern dashboard.
+The app implements a **"Golden Triangle"** framework (40% Financials + 35% CEO Tone + 25% Social/News) plus optional multi-agent deep analysis via CrewAI.
 
 ---
 
-### Key Features
+## Key Features
 
 - **Golden Triangle Scoring**
-  - Blends earnings surprises, margins, insider activity, CEO tone, and news sentiment into a single 0–10 score.
-- **Modern Single‑Page UI**
-  - Streamlit one‑pager with glass‑morphism styling, command‑palette search, responsive layout, and rich Plotly charts.
+  - Blends earnings surprises, margins, insider activity, CEO tone, and news sentiment into a single 0-10 score.
+- **Modern React Dashboard**
+  - React + TypeScript + Vite frontend with institutional-grade UI design
+  - Real-time data visualization with Recharts
+  - Responsive layout with Tailwind CSS
+- **FastAPI Backend**
+  - Python-powered REST API wrapping ML models and data pipelines
+  - CORS-enabled for frontend integration
 - **ML Earnings Outlook**
-  - Multiple trained models (LightGBM, XGBoost, Random Forest, Logistic Regression, Neural Net) with a consensus prediction:
-    - **Growth** / **Stagnation** / **Risk** + confidence.
+  - Multiple trained models (LightGBM, XGBoost, Random Forest, Logistic Regression, Neural Net)
+  - Consensus prediction: **Growth** / **Stagnation** / **Risk** + confidence score
+  - Trained on 1,050+ real earnings quarters from FMP data
 - **CEO Tone & NLP**
-  - Analyzes earnings call transcripts (where available) using a custom NLP pipeline (VADER + TextBlob).
-- **News‑Driven Social Sentiment**
-  - Uses FMP `news/stock-latest` + NLP instead of broken social‑sentiment endpoints; aggregates bullish/bearish ratios.
+  - Analyzes earnings call transcripts using VADER + TextBlob NLP pipeline
+  - Extracts confidence, sentiment, guidance signals
+- **News-Driven Social Sentiment**
+  - Uses FMP `news/stock-latest` + NLP; aggregates bullish/bearish ratios
 - **Optional CrewAI Deep Analysis**
-  - Three agents (Scout, Social Listener, Fusion) generate a research‑style narrative report on demand.
-- **Production‑Ready DevOps**
-  - Dockerfile + `docker-compose.yml`, scripts for data collection and model training, and a caching layer.
+  - Three agents (Scout, Social Listener, Fusion) generate research-style narrative reports
+- **Production-Ready**
+  - Dockerfile + `docker-compose.yml`, scripts for data collection and model training
 
 ---
 
-### Tech Stack
+## Architecture
 
-- **Frontend / UI**: Streamlit, Plotly
-- **Backend / Data**: Python 3.11, FMP `/stable/` API
-- **ML**: scikit‑learn, XGBoost, LightGBM, custom trainer & predictor
-- **NLP**: VADER, TextBlob
-- **Agents**: CrewAI + OpenAI (`gpt-4o-mini`)
-- **Infra**: Docker, Docker Compose
-
----
-
-### Project Structure (High‑Level)
-
-```text
-app/
-  main.py              # Single-page Streamlit app
-  components/          # Charts, metrics, disclaimers, UI building blocks
-  config/theme.py      # Colors & CSS (StockFlow-style design system)
-
-config/
-  settings.py          # Pydantic settings + env handling
-
-src/
-  data_ingestion/      # FMP client + validators
-  feature_engineering/ # Financial, CEO tone, social/news features, pipeline
-  ml/                  # Model comparison, training, prediction
-  agents/              # CrewAI crew, tools, orchestrator, prompts
-  utils/               # Logging, caching, helpers
-
-scripts/
-  collect_training_data.py
-  train_model.py
-  run_analysis.py
-
-data/
-  models/              # Trained models + metadata
-  training/            # Collected training datasets
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     React Frontend (Vite)                    │
+│  - LegalDisclaimer, CommandBar, TickerStrip                 │
+│  - IntelligenceHub (ConfidenceRing, RadarChart, AIAnalysis) │
+│  - MarketStage (PriceChart, TimeframePills)                 │
+│  - FinancialIntel (Financials, EarningsCall, News, Insider) │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼ HTTP/REST
+┌─────────────────────────────────────────────────────────────┐
+│                    FastAPI Backend                           │
+│  - /api/analyze/{symbol}    → Full analysis + ML prediction │
+│  - /api/quote/{symbol}      → Real-time quote               │
+│  - /api/historical/{symbol} → Price history for charts      │
+│  - /api/deep-analysis/{symbol} → CrewAI agents (optional)   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Python ML Pipeline                        │
+│  - EarningsOrchestrator → Coordinates all data fetching     │
+│  - FeaturePipeline → Extracts 48 features                   │
+│  - EarningsPredictor → 5 ML models + consensus voting       │
+│  - TranscriptAnalyzer → CEO tone NLP                        │
+│  - SentimentFeatureExtractor → News sentiment NLP           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    FMP API (Data Source)                     │
+│  - /stable/quote, earnings-surprises, income-statement      │
+│  - /stable/earnings-call-transcript, insider-trading        │
+│  - /stable/news/stock-latest, historical-price-eod          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-For deeper implementation details, see `CLAUDE.md` (project memory).
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Recharts, Framer Motion, Radix UI |
+| **Backend** | Python 3.11, FastAPI, Uvicorn |
+| **ML** | scikit-learn, XGBoost, LightGBM, custom trainer & predictor |
+| **NLP** | VADER, TextBlob |
+| **Agents** | CrewAI + OpenAI (`gpt-4o-mini`) |
+| **Data** | FMP `/stable/` API |
+| **Infra** | Docker, Docker Compose |
 
 ---
 
-### Requirements
+## Project Structure
 
-- **Python**: 3.11 recommended
-- **Account / APIs**:
+```
+earnings_hunter/
+├── api/                       # FastAPI backend
+│   ├── main.py               # FastAPI app entry point
+│   └── routers/
+│       ├── analysis.py       # /analyze/{symbol} endpoint
+│       ├── quote.py          # /quote/{symbol} endpoint
+│       └── historical.py     # /historical/{symbol} endpoint
+│
+├── frontend/                  # React frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── LegalDisclaimer.tsx
+│   │   │   ├── CommandBar.tsx
+│   │   │   ├── TickerStrip.tsx
+│   │   │   ├── IntelligenceHub/
+│   │   │   ├── MarketStage/
+│   │   │   └── FinancialIntel/
+│   │   ├── services/api.ts   # API client
+│   │   ├── types/index.ts    # TypeScript interfaces
+│   │   └── App.tsx           # Main app component
+│   ├── tailwind.config.js    # Design system colors
+│   └── package.json
+│
+├── src/                       # Python ML/Data pipeline
+│   ├── data_ingestion/
+│   │   ├── fmp_client.py     # FMP API client
+│   │   └── validators.py     # Pydantic models
+│   ├── feature_engineering/
+│   │   ├── financial_features.py
+│   │   ├── transcript_analyzer.py
+│   │   ├── sentiment_features.py
+│   │   ├── social_features.py
+│   │   └── feature_pipeline.py
+│   ├── ml/
+│   │   ├── model_comparison.py
+│   │   ├── trainer.py
+│   │   └── predictor.py
+│   └── agents/
+│       ├── orchestrator.py   # Main analysis coordinator
+│       ├── crew.py           # CrewAI 3-agent system
+│       └── tools/fmp_tools.py
+│
+├── config/settings.py         # Pydantic settings
+├── scripts/                   # CLI utilities
+│   ├── collect_training_data.py
+│   ├── train_model.py
+│   └── run_analysis.py
+├── data/
+│   ├── models/               # Trained ML models (5 models)
+│   └── training/             # Training datasets
+│
+├── app/                       # Legacy Streamlit (deprecated)
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── CLAUDE.md                  # Project memory & decisions
+└── README.md                  # This file
+```
+
+---
+
+## Requirements
+
+- **Python**: 3.11+
+- **Node.js**: 18+ (for frontend)
+- **APIs**:
   - FMP **Ultimate** (or compatible) API key
-  - OpenAI API key
-- **OS**: Developed and tested on Windows 10 + Docker, but should work on macOS/Linux as well.
+  - OpenAI API key (for CrewAI deep analysis)
 
 ---
 
-### Environment Variables
+## Environment Variables
 
-Create a `.env` file (you can start from `.env.example`) with at least:
+Create a `.env` file in the project root:
 
-- **Required**
-  - `FMP_API_KEY` – your Financial Modeling Prep API key
-  - `OPENAI_API_KEY` – your OpenAI API key
-- **Optional / Advanced**
-  - `LOG_LEVEL` – default `INFO`
-  - `CACHE_EXPIRY_HOURS` – default `24`
+```env
+# Required
+FMP_API_KEY=your_fmp_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 
-Reddit credentials are **not** required; social sentiment is derived from stock news.
+# Optional
+LOG_LEVEL=INFO
+CACHE_EXPIRY_HOURS=24
+```
 
 ---
 
-### Quick Start (Local)
+## Quick Start
+
+### Option 1: Run Locally (Development)
 
 ```bash
-# 1. Create and activate a virtual environment (recommended)
-python -m venv .venv
-.\.venv\Scripts\activate   # Windows
-# source .venv/bin/activate  # macOS / Linux
-
-# 2. Install dependencies
+# 1. Clone and setup Python environment
+cd "Earnings Hunter Fnal"
+conda activate earnings_hunter  # or your preferred env
 pip install -r requirements.txt
 
-# 3. Configure environment
-cp .env.example .env   # or create .env manually
-# Edit .env and set FMP_API_KEY and OPENAI_API_KEY
+# 2. Setup frontend
+cd frontend
+npm install
+cd ..
 
-# 4. Run the Streamlit app
-streamlit run app/main.py
+# 3. Configure environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# 4. Start Backend (Terminal 1)
+python -m uvicorn api.main:app --reload --port 8000
+
+# 5. Start Frontend (Terminal 2)
+cd frontend
+npm run dev
+
+# 6. Open browser
+# http://localhost:5173
 ```
 
-Then open `http://localhost:8501` in your browser.
+### Option 2: Docker
+
+```bash
+docker-compose up --build
+# App available at http://localhost:5173
+# API available at http://localhost:8000
+```
 
 ---
 
-### Running with Docker
+## ML Models
+
+The system uses **5 trained ML models** with consensus voting:
+
+| Model | CV Accuracy | Notes |
+|-------|-------------|-------|
+| Neural Network (MLP) | 53.9% | **Best model** |
+| LightGBM | 51.4% | Fast, good for production |
+| Random Forest | 51.0% | Robust baseline |
+| XGBoost | 50.0% | Gradient boosting |
+| Logistic Regression | 39.9% | Interpretable |
+
+**Training Data**: 1,050 real earnings quarters from FMP (2021-2026)
+
+**Labels** (based on 5-day post-earnings price change):
+- **Growth**: Price increased > 5%
+- **Risk**: Price decreased > 5%
+- **Stagnation**: Price change between -5% and +5%
+
+### Retrain Models
 
 ```bash
-# Build and start the main app
-docker-compose up --build
-
-# App will be available at:
-# http://localhost:8501
+python scripts/train_model.py \
+  --data data/training/training_data_20260206_124508.csv \
+  --output-dir data/models
 ```
 
-Optional profiles:
+---
 
-- `collect` – run `data-collector` service to gather training data.
-- `train` – run `model-trainer` service to retrain models.
+## Golden Triangle Framework
+
+| Vector | Weight | Source | Features |
+|--------|--------|--------|----------|
+| **Hard Data** | 40% | FMP API | EPS/revenue surprises, margins, analyst consensus, insider sentiment |
+| **CEO Tone** | 35% | Transcript NLP | Confidence, sentiment, guidance, uncertainty (VADER + TextBlob) |
+| **Social** | 25% | News NLP | News sentiment, bullish/bearish ratio |
+
+**48 total features** are extracted and fed to the ML models.
+
+---
+
+## CrewAI Deep Analysis
+
+When enabled, runs a **three-agent system**:
+
+| Agent | Role | Tools |
+|-------|------|-------|
+| **Scout Agent** | Financial + CEO tone analysis | FMP earnings, transcripts, insider data |
+| **Social Listener** | News sentiment analysis | FMP stock news |
+| **Fusion Agent** | Synthesizes all data | Receives other agents' output |
+
+**Cost**: ~$0.01-0.02 per deep analysis
+**Time**: 30-60 seconds
+
+---
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analyze/{symbol}` | GET | Full analysis with Golden Triangle + ML prediction |
+| `/api/quote/{symbol}` | GET | Real-time stock quote |
+| `/api/historical/{symbol}` | GET | Historical prices for charts |
+| `/api/deep-analysis/{symbol}` | POST | CrewAI agent analysis |
 
 Example:
-
 ```bash
-docker-compose --profile collect up
-docker-compose --profile train up
+curl http://localhost:8000/api/analyze/NVDA
 ```
 
 ---
 
-### How the Golden Triangle Works
+## Changelog
 
-- **Hard Financials (40%)**
-  - EPS & revenue surprises, analyst targets, margins, insider activity.
-- **CEO Tone (35%)**
-  - Transcript sentiment, confidence, guidance, and uncertainty scores from NLP.
-- **Social / News (25%)**
-  - Aggregated sentiment from stock news using VADER + TextBlob.
+### 2026-02-12: React Frontend + FastAPI Backend
+- Replaced Streamlit with React + TypeScript + Vite
+- Created FastAPI backend wrapping existing ML pipeline
+- Added institutional-grade UI design
+- Fixed ML model version mismatch (retrained models)
+- Added transcript, news, insider data to API responses
 
-These three vectors are normalized to 0–10 and combined into a single **Golden Triangle score**, which also feeds the ML prediction and UI visuals (radar chart, anomaly cards, badges, etc.).
+### 2026-02-09: Single-Page Streamlit App
+- Converted multi-page to onepager
+- Fixed Golden Triangle display
+- Added CrewAI deep analysis integration
 
----
-
-### CrewAI Deep Analysis
-
-When the **“Deep”** checkbox is enabled in the UI:
-
-- The app runs a CrewAI **three‑agent system**:
-  - **Scout Agent** – digs into financials + transcripts.
-  - **Social Listener** – analyzes news‑based sentiment.
-  - **Fusion Agent** – synthesizes everything (plus ML prediction) into a narrative research summary.
-- Typical runtime: **30–60 seconds**, API cost roughly **$0.01–0.02** per deep analysis.
-
-The deep analysis is strictly optional; the fast pipeline runs without any agent cost.
+### 2026-02-05: Initial Release
+- FMP data integration
+- ML model training pipeline
+- NLP sentiment analysis
 
 ---
 
-### Scripts (CLI Utilities)
+## Disclaimer
 
-- `scripts/collect_training_data.py` – pull historical data from FMP and write CSVs under `data/training/`.
-- `scripts/train_model.py` – train multiple ML models and save the best ones under `data/models/`.
-- `scripts/run_analysis.py` – run an offline analysis for a given ticker from the command line.
-
-See the script `--help` flags for more options.
-
----
-
-### Disclaimer
-
-This project is for **educational and research purposes only** and **does not constitute financial advice**.  
-Predictions, scores, and visualizations are experimental and should **not** be used as the sole basis for any investment decision.  
+This project is for **educational and research purposes only** and **does not constitute financial advice**.
+Predictions, scores, and visualizations are experimental and should **not** be used as the sole basis for any investment decision.
 Always do your own research and consult a licensed financial professional.
 
+---
+
+## License
+
+MIT License - see LICENSE file for details.
