@@ -10,7 +10,6 @@ from typing import Optional, Dict, Any, List
 import traceback
 
 from src.agents.orchestrator import EarningsOrchestrator, AnalysisResult
-from src.agents.crew import EarningsHunterCrew
 from config.settings import get_settings
 
 router = APIRouter()
@@ -172,6 +171,7 @@ async def deep_analysis(
     symbol = symbol.upper().strip()
 
     try:
+        from src.agents.crew import EarningsHunterCrew
         settings = get_settings()
         crew = EarningsHunterCrew()
 

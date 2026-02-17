@@ -53,7 +53,7 @@ RUN mkdir -p data/raw data/processed data/models data/cache data/training
 EXPOSE ${PORT:-8000}
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Start FastAPI server
