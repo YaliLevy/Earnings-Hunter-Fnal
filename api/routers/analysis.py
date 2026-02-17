@@ -124,6 +124,8 @@ class AnalysisResponse(BaseModel):
     transcript_content: Optional[str] = None
     research_insight: Optional[str] = None
     disclaimer: str
+    composite_breakdown: Optional[Dict[str, Any]] = None
+    ml_consensus: Optional[Dict[str, Any]] = None
 
 
 @router.get("/analyze/{symbol}", response_model=AnalysisResponse)
@@ -189,6 +191,78 @@ async def deep_analysis(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Deep analysis failed: {str(e)}")
+
+
+def _compute_composite_breakdown(result: AnalysisResult) -> Optional[Dict[str, Any]]:
+    """Compute the 5-component composite score using expert AI scores + ML."""
+    expert = result.expert_scores if hasattr(result, 'expert_scores') else None
+    ml = result.ml_consensus if hasattr(result, 'ml_consensus') else None
+
+    if not expert:
+        return None
+
+    # Component scores from expert agent (0-100)
+    financial_score = expert.get("financial_score", 50)
+    ceo_tone_score = expert.get("ceo_tone_score", 50)
+    news_score = expert.get("news_score", 50)
+    insider_score = expert.get("insider_score", 50)
+
+    # ML model score (0-100): blend of confidence and agreement
+    best_conf = (ml or {}).get("best_model_confidence") or (result.confidence or 0.5)
+    agreement = (ml or {}).get("agreement_ratio", 1.0)
+    ml_score = (best_conf * 0.6 + agreement * 0.4) * 100
+
+    # Fixed weights
+    weights = {
+        "financial": 0.25,
+        "ceo_tone": 0.20,
+        "news": 0.15,
+        "insider": 0.10,
+        "ml_model": 0.30,
+    }
+
+    scores = {
+        "financial": financial_score,
+        "ceo_tone": ceo_tone_score,
+        "news": news_score,
+        "insider": insider_score,
+        "ml_model": round(ml_score, 1),
+    }
+
+    composite = sum(scores[k] * weights[k] for k in weights)
+
+    labels = {
+        "financial": "Financial",
+        "ceo_tone": "CEO Tone",
+        "news": "News",
+        "insider": "Insider",
+        "ml_model": "ML Model",
+    }
+
+    reasoning = {
+        "financial": expert.get("financial_reasoning", ""),
+        "ceo_tone": expert.get("ceo_tone_reasoning", ""),
+        "news": expert.get("news_reasoning", ""),
+        "insider": expert.get("insider_reasoning", ""),
+        "ml_model": f"{(ml or {}).get('models_agree', '?')}/{(ml or {}).get('models_total', '?')} models agree: {result.prediction}",
+    }
+
+    components = []
+    for key in weights:
+        components.append({
+            "key": key,
+            "label": labels[key],
+            "score": scores[key],
+            "weight": round(weights[key] * 100),
+            "weighted_contribution": round(scores[key] * weights[key], 1),
+            "reasoning": reasoning[key],
+        })
+
+    return {
+        "composite_score": round(composite, 1),
+        "components": components,
+        "overall_reasoning": expert.get("overall_reasoning", ""),
+    }
 
 
 def _convert_to_response(result: AnalysisResult) -> dict:
@@ -296,5 +370,7 @@ def _convert_to_response(result: AnalysisResult) -> dict:
         "insider_transactions": insider_transactions,
         "transcript_content": transcript_content,
         "research_insight": result.research_insight.get('insight') if result.research_insight else None,
-        "disclaimer": result.disclaimer
+        "disclaimer": result.disclaimer,
+        "composite_breakdown": _compute_composite_breakdown(result),
+        "ml_consensus": result.ml_consensus if hasattr(result, 'ml_consensus') and result.ml_consensus else None,
     }

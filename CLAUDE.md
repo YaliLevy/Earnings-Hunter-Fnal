@@ -1,13 +1,14 @@
 # CLAUDE.md - Project Memory & Progress Tracker
 
 > **IMPORTANT**: This file is the project's memory. Update it after EVERY change!
-> Last Updated: 2026-02-13 (React Frontend + FastAPI Backend)
+> Last Updated: 2026-02-17 (Composite Scoring System + Financial Expert Agent)
 
 ## Project Overview
 **Name:** The Earnings Hunter
-**Goal:** Multi-agent SaaS for earnings analysis using Golden Triangle (40% Financial + 35% CEO Tone + 25% Social)
+**Goal:** Multi-agent SaaS for earnings analysis with AI-powered composite scoring
 **Status:** PRODUCTION - React + FastAPI Architecture
 **Data Source:** FMP API ONLY (no Reddit/PRAW)
+**Scoring:** Composite 5-component system (Financial Expert Agent + ML Models)
 
 ---
 
@@ -18,15 +19,15 @@
 2. **2026-02-09**: Converted to single-page Streamlit app
 3. **2026-02-13**: **Complete rewrite to React + FastAPI architecture**
 
-### Current Architecture (2026-02-13):
+### Current Architecture (2026-02-17):
 
 ```
 ┌─────────────────────────────────────────┐
 │      React Frontend (Vite + TS)         │
 │  - Institutional Cybernetics Design     │
-│  - Real-time data visualization         │
-│  - Recharts for charts                  │
-│  - Tailwind CSS + Framer Motion         │
+│  - Composite Score Ring + Breakdown     │
+│  - 5-axis Analysis Radar               │
+│  - Recharts + Tailwind + Framer Motion  │
 └─────────────────────────────────────────┘
                   ↓ HTTP/REST
 ┌─────────────────────────────────────────┐
@@ -35,13 +36,15 @@
 │  - /api/quote/{symbol}                  │
 │  - /api/historical/{symbol}             │
 │  - /api/deep-analysis/{symbol}          │
+│  - Composite breakdown computation      │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
-│    Existing ML Pipeline (Preserved)     │
+│    ML Pipeline + Expert Agent           │
 │  - EarningsOrchestrator                 │
 │  - FeaturePipeline (48 features)        │
 │  - 5 ML Models + Consensus              │
+│  - FinancialExpertScorer (GPT-4o-mini)  │
 │  - TranscriptAnalyzer (NLP)             │
 │  - SentimentFeatureExtractor (NLP)      │
 └─────────────────────────────────────────┘
@@ -65,16 +68,16 @@ All original files completed (see previous version for details)
 | 39 | frontend/package.json | ✅ Done | React 18, TypeScript, Vite, Tailwind |
 | 40 | frontend/tailwind.config.js | ✅ Done | Institutional Cybernetics color palette |
 | 41 | frontend/vite.config.ts | ✅ Done | Proxy to backend on :8000 |
-| 42 | frontend/src/types/index.ts | ✅ Done | TypeScript interfaces matching API |
+| 42 | frontend/src/types/index.ts | ✅ Done | TypeScript interfaces + CompositeBreakdown + MLConsensus |
 | 43 | frontend/src/services/api.ts | ✅ Done | API client with error handling |
 | 44 | frontend/src/components/LegalDisclaimer.tsx | ✅ Done | Radix UI Dialog |
 | 45 | frontend/src/components/CommandBar.tsx | ✅ Done | Ticker search with icon |
 | 46 | frontend/src/components/TickerStrip.tsx | ✅ Done | Slot machine animation |
 | 47 | frontend/src/components/SlotNumber.tsx | ✅ Done | Rolling number animation |
-| 48 | frontend/src/components/IntelligenceHub/ConfidenceRing.tsx | ✅ Done | SVG circular progress |
-| 49 | frontend/src/components/IntelligenceHub/GoldenTriangleRadar.tsx | ✅ Done | Recharts RadarChart |
+| 48 | frontend/src/components/IntelligenceHub/ConfidenceRing.tsx | ✅ Done | SVG ring + Score Breakdown bars |
+| 49 | frontend/src/components/IntelligenceHub/GoldenTriangleRadar.tsx | ✅ Done | 5-axis Analysis Radar (fallback to 3-axis) |
 | 50 | frontend/src/components/IntelligenceHub/AIAnalysis.tsx | ✅ Done | Deep analysis panel |
-| 51 | frontend/src/components/IntelligenceHub/index.tsx | ✅ Done | Main hub component |
+| 51 | frontend/src/components/IntelligenceHub/index.tsx | ✅ Done | Hub with composite score logic |
 | 52 | frontend/src/components/MarketStage/PriceChart.tsx | ✅ Done | Recharts AreaChart |
 | 53 | frontend/src/components/MarketStage/TimeframePills.tsx | ✅ Done | Tab selector |
 | 54 | frontend/src/components/MarketStage/index.tsx | ✅ Done | Market stage container |
@@ -92,9 +95,21 @@ All original files completed (see previous version for details)
 | # | File | Status | Notes |
 |---|------|--------|-------|
 | 63 | api/main.py | ✅ Done | FastAPI app with CORS |
-| 64 | api/routers/analysis.py | ✅ Done | Main analysis endpoint |
+| 64 | api/routers/analysis.py | ✅ Done | Analysis endpoint + composite breakdown computation |
 | 65 | api/routers/quote.py | ✅ Done | Real-time quote endpoint |
 | 66 | api/routers/historical.py | ✅ Done | Historical prices endpoint |
+
+### Phase 10: Composite Scoring System (NEW - 2026-02-17)
+
+| # | File | Status | Notes |
+|---|------|--------|-------|
+| 67 | src/agents/financial_scorer.py | ✅ Done | GPT-4o-mini expert scorer (NEW FILE) |
+| 68 | src/agents/orchestrator.py | ✅ Done | Added expert_scores + ml_consensus fields |
+| 69 | api/routers/analysis.py | ✅ Done | Added _compute_composite_breakdown() |
+| 70 | frontend/src/types/index.ts | ✅ Done | Added CompositeBreakdown, MLConsensus types |
+| 71 | frontend/src/components/IntelligenceHub/ConfidenceRing.tsx | ✅ Done | Added Score Breakdown bars |
+| 72 | frontend/src/components/IntelligenceHub/GoldenTriangleRadar.tsx | ✅ Done | 5-axis radar with composite data |
+| 73 | frontend/src/components/IntelligenceHub/index.tsx | ✅ Done | Wired composite score to ring |
 
 ---
 
@@ -103,6 +118,10 @@ All original files completed (see previous version for details)
 
 | Timestamp | Action | Files Changed | Notes |
 |-----------|--------|---------------|-------|
+| 2026-02-17 | **COMPOSITE SCORING SYSTEM** | financial_scorer.py (NEW), orchestrator.py, analysis.py, types/index.ts, ConfidenceRing.tsx, GoldenTriangleRadar.tsx, index.tsx | 5-component weighted scoring with AI expert agent |
+| 2026-02-17 | **FINANCIAL EXPERT AGENT** | src/agents/financial_scorer.py | GPT-4o-mini scores 4 components (0-100) with reasoning, runs automatically |
+| 2026-02-17 | **RADAR CHART UPGRADE** | GoldenTriangleRadar.tsx | 3-axis → 5-axis radar with composite breakdown |
+| 2026-02-17 | **SCORE BREAKDOWN UI** | ConfidenceRing.tsx | Progress bars with color-coded scores + hover reasoning |
 | 2026-02-13 | **RETRAINED ML MODELS** | data/models/*.pkl | Fixed numpy/sklearn version mismatch |
 | 2026-02-13 | **FIXED DATA FLOW** | orchestrator.py, analysis.py | Added transcript_content, news_articles, insider_transactions to API |
 | 2026-02-13 | **CREATED FASTAPI BACKEND** | api/main.py, api/routers/*.py | REST API wrapping ML pipeline |
@@ -149,8 +168,8 @@ App.tsx (Main state management)
 ├── CommandBar (Search input)
 ├── TickerStrip (Animated ticker + slot numbers)
 ├── IntelligenceHub
-│   ├── ConfidenceRing (SVG circular progress)
-│   ├── GoldenTriangleRadar (Recharts radar)
+│   ├── ConfidenceRing (SVG ring + Score Breakdown with 5 progress bars)
+│   ├── GoldenTriangleRadar (5-axis Analysis Radar / fallback 3-axis Golden Triangle)
 │   └── AIAnalysis (Deep analysis panel)
 ├── MarketStage
 │   ├── TimeframePills (Tab selector)
@@ -242,13 +261,67 @@ App.tsx (Main state management)
 
 ---
 
-## Golden Triangle (Unchanged)
+## Composite Scoring System (NEW - 2026-02-17)
+
+### Overview
+Replaced the simple confidence calculation (50% ML + 50% Golden Triangle) with a 5-component weighted composite score powered by an AI Financial Expert Agent.
+
+### Scoring Formula (Fixed Weights)
+
+| Component | Weight | Source | Scorer |
+|-----------|--------|--------|--------|
+| **Financial** | 25% | EPS/revenue surprises, margins, price targets | GPT-4o-mini Expert Agent |
+| **CEO Tone** | 20% | Earnings call transcript (first 3000 chars) | GPT-4o-mini Expert Agent |
+| **News** | 15% | FMP stock news headlines + sentiment | GPT-4o-mini Expert Agent |
+| **Insider** | 10% | Insider buy/sell transactions | GPT-4o-mini Expert Agent |
+| **ML Model** | 30% | (best_confidence × 0.6 + agreement_ratio × 0.4) × 100 | Algorithmic |
+
+**Total: 100%** - AI agent scores 4 components, ML component is algorithmic.
+
+### Financial Expert Agent (`src/agents/financial_scorer.py`)
+- **Model:** GPT-4o-mini (direct OpenAI API call, NOT CrewAI)
+- **Runs:** Automatically on every search (no user toggle needed)
+- **Cost:** ~$0.01 per search
+- **Time:** 5-10 seconds
+- **Output:** JSON with scores 0-100 + reasoning for each component
+- **Fallback:** Returns neutral scores (50) on any failure
+- **Prompt:** Receives all raw data (financials, transcript excerpt, news headlines, insider trades)
+
+### Data Flow
+```
+User enters ticker → Backend fetches all data (FMP API)
+  → Feature extraction + ML prediction (existing pipeline)
+  → Financial Expert Agent scores 4 components (GPT-4o-mini)
+  → Backend computes composite: weighted sum of 5 scores
+  → Frontend displays: Confidence Ring + Score Breakdown bars + 5-axis Radar
+```
+
+### Frontend Display
+- **Confidence Ring:** Shows `composite_score / 100` (0-100%)
+- **Score Breakdown:** 5 horizontal progress bars with color coding:
+  - Green (#10b981): score >= 65
+  - Amber (#f59e0b): score 35-64
+  - Red (#ef4444): score < 35
+- **Analysis Radar:** 5-axis radar chart (was 3-axis Golden Triangle)
+- **Hover reasoning:** Each component shows AI reasoning on hover
+- **Overall reasoning:** Summary at bottom of breakdown
+
+### Fallback Behavior
+When `composite_breakdown` is null (expert agent unavailable):
+- Confidence Ring: uses old formula `(ML_confidence × 0.5 + golden_triangle × 0.5)`
+- Radar: shows original 3-axis Golden Triangle (Financial 40%, CEO Tone 35%, Sentiment 25%)
+
+---
+
+## Golden Triangle (Feature Extraction - Unchanged)
 
 | Vector | Weight | Source | Features |
 |--------|--------|--------|----------|
 | Hard Data | 40% | FMP `/stable/` API | EPS/revenue surprises, margins, analyst consensus, insider sentiment |
 | CEO Tone | 35% | FMP Transcripts + NLP | Confidence score, sentiment, guidance, uncertainty (VADER + TextBlob) |
 | Social | 25% | **FMP Stock News + NLP** | News sentiment analyzed via VADER + TextBlob |
+
+**Note:** Golden Triangle weights (40/35/25) are still used for ML **feature extraction**. The new composite scoring weights (25/20/15/10/30) are used for the **final display score**.
 
 **Total Features:** 48
 **ML Models:** 5 (Neural Net is best)
@@ -272,7 +345,7 @@ App.tsx (Main state management)
 
 ## API Keys Required
 - [x] FMP_API_KEY (Ultimate subscription)
-- [x] OPENAI_API_KEY (for CrewAI only)
+- [x] OPENAI_API_KEY (for Financial Expert Agent + CrewAI)
 
 ---
 
@@ -334,11 +407,15 @@ earnings_hunter/
 │   ├── vite.config.ts
 │   └── package.json
 │
-├── src/                       # Python ML pipeline (PRESERVED)
+├── src/                       # Python ML pipeline + Expert Agent
 │   ├── data_ingestion/
 │   ├── feature_engineering/
 │   ├── ml/
 │   └── agents/
+│       ├── orchestrator.py    # Main coordinator (+ expert scorer integration)
+│       ├── financial_scorer.py # GPT-4o-mini expert agent (NEW 2026-02-17)
+│       ├── crew.py            # CrewAI 3-agent system (optional)
+│       └── tools/fmp_tools.py
 │
 ├── config/settings.py
 ├── scripts/
@@ -375,6 +452,10 @@ earnings_hunter/
 11. **TypeScript** - Full type safety in frontend
 12. **Tailwind CSS** - Utility-first styling
 13. **Recharts** - Production-ready charts
+14. **Fixed weights for composite** - Simple, predictable (not dynamic/Bayesian)
+15. **GPT-4o-mini for expert scoring** - Cheapest, fastest, runs automatically on every search
+16. **Direct OpenAI API call** - Not CrewAI (lighter, faster for single-agent task)
+17. **ML component is algorithmic** - Not scored by AI agent (already a model output)
 
 ---
 
@@ -439,8 +520,13 @@ npm run dev
 - ✅ Insider trades shown
 - ✅ Charts rendering (price, radar)
 - ✅ CrewAI agents available (optional)
+- ✅ Financial Expert Agent scoring (GPT-4o-mini)
+- ✅ Composite score displayed in Confidence Ring
+- ✅ Score Breakdown with 5 progress bars + reasoning
+- ✅ 5-axis Analysis Radar chart
+- ✅ Tested with AAPL - composite score 81%
 
 ---
 
-**Last verified working:** 2026-02-13
+**Last verified working:** 2026-02-17
 **Next review:** After deployment to production

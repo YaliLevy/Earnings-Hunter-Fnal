@@ -20,17 +20,26 @@ export function IntelligenceHub({ analysis, deepInsight }: IntelligenceHubProps)
         INTELLIGENCE HUB
       </h2>
 
-      {/* Confidence Ring */}
+      {/* Confidence Ring - Composite Score from Expert AI + ML */}
       <ConfidenceRing
-        confidence={analysis.confidence}
+        confidence={
+          analysis.composite_breakdown
+            ? Math.min(analysis.composite_breakdown.composite_score / 100, 1)
+            : Math.min(
+                (analysis.confidence ?? 0) * 0.5 +
+                ((analysis.golden_triangle?.composite?.score ?? 5) / 10) * 0.5,
+                1
+              )
+        }
         prediction={analysis.prediction}
+        breakdown={analysis.composite_breakdown}
       />
 
       {/* Divider */}
       <div className="h-px bg-border my-4" />
 
-      {/* Golden Triangle Radar */}
-      <GoldenTriangleRadar data={analysis.golden_triangle} />
+      {/* Analysis Radar */}
+      <GoldenTriangleRadar data={analysis.golden_triangle} breakdown={analysis.composite_breakdown} />
 
       {/* Divider */}
       <div className="h-px bg-border my-4" />
@@ -43,7 +52,7 @@ export function IntelligenceHub({ analysis, deepInsight }: IntelligenceHubProps)
         confidence={analysis.confidence}
         epsBeat={analysis.financial_summary.eps_beat}
         epsSurprise={analysis.financial_summary.eps_surprise}
-        ceoPhrases={analysis.ceo_tone_summary.key_positive_phrases || []}
+        ceoPhrases={analysis.ceo_tone_summary?.key_positive_phrases || []}
         deepInsight={deepInsight}
       />
     </div>

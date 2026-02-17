@@ -49,26 +49,10 @@ export const SlotNumber = memo(function SlotNumber({
         return (
           <span
             key={`digit-${index}`}
-            className="slot-digit relative inline-block overflow-hidden"
-            style={{ height: '1em' }}
+            className="slot-digit relative inline-block overflow-hidden text-center"
+            style={{ height: '1em', width: '0.6em' }}
           >
-            <span
-              className="slot-digit-inner absolute inset-x-0"
-              style={{
-                transform: `translateY(-${digit * 10}%)`,
-                transition: 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)',
-              }}
-            >
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                <span
-                  key={n}
-                  className="block"
-                  style={{ height: '1em', lineHeight: '1em' }}
-                >
-                  {n}
-                </span>
-              ))}
-            </span>
+            {digit}
           </span>
         );
       })}

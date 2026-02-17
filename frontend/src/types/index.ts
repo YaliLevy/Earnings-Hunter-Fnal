@@ -4,8 +4,8 @@ export interface Quote {
   symbol: string;
   name: string | null;
   price: number;
-  change: number;
-  change_percent: number;
+  change: number | null;
+  change_percent: number | null;
   day_low: number | null;
   day_high: number | null;
   year_low: number | null;
@@ -92,6 +92,30 @@ export interface InsiderTrade {
   type: 'BUY' | 'SELL' | 'OTHER';
 }
 
+export interface CompositeComponent {
+  key: string;
+  label: string;
+  score: number;         // 0-100
+  weight: number;        // percentage (e.g. 25)
+  weighted_contribution: number;
+  reasoning: string;
+}
+
+export interface CompositeBreakdown {
+  composite_score: number;  // 0-100
+  components: CompositeComponent[];
+  overall_reasoning: string;
+}
+
+export interface MLConsensus {
+  agreement_ratio: number;
+  vote_distribution: Record<string, number>;
+  models_agree: number;
+  models_total: number;
+  best_model_confidence: number | null;
+  best_model_name: string;
+}
+
 export interface AnalysisResult {
   symbol: string;
   company_name: string | null;
@@ -110,6 +134,8 @@ export interface AnalysisResult {
   transcript_content: string | null;
   research_insight: string | null;
   disclaimer: string;
+  composite_breakdown: CompositeBreakdown | null;
+  ml_consensus: MLConsensus | null;
 }
 
 export interface PricePoint {

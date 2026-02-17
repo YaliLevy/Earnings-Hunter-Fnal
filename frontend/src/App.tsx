@@ -11,8 +11,8 @@ import { FinancialIntel } from './components/FinancialIntel';
 import { FooterDisclaimer } from './components/FooterDisclaimer';
 
 // Services & Types
-import { getAnalysis, getHistoricalData, getNews, runDeepAnalysis } from './services/api';
-import type { AnalysisResult, HistoricalData, Timeframe } from './types';
+import { getAnalysis, getHistoricalData, getNews, getQuote, runDeepAnalysis } from './services/api';
+import type { AnalysisResult, HistoricalData, Quote, Timeframe } from './types';
 
 function App() {
   // Disclaimer state
@@ -27,6 +27,7 @@ function App() {
 
   // Data state
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [quote, setQuote] = useState<Quote | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalData | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('3M');
   const [deepInsight, setDeepInsight] = useState<string | null>(null);
@@ -46,13 +47,15 @@ function App() {
     setDeepInsight(null);
 
     try {
-      // Fetch analysis and historical data in parallel
-      const [analysisResult, historyResult] = await Promise.all([
+      // Fetch analysis, quote, and historical data in parallel
+      const [analysisResult, quoteResult, historyResult] = await Promise.all([
         getAnalysis(symbol),
+        getQuote(symbol),
         getHistoricalData(symbol, timeframe),
       ]);
 
       setAnalysis(analysisResult);
+      setQuote(quoteResult);
       setHistoricalData(historyResult);
 
       // Fetch news and update analysis with it
@@ -83,6 +86,22 @@ function App() {
       setIsLoading(false);
     }
   }, [timeframe, deepReasoning]);
+
+  // Auto-refresh quote every 15 seconds
+  useEffect(() => {
+    if (!analysis?.symbol) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const freshQuote = await getQuote(analysis.symbol);
+        setQuote(freshQuote);
+      } catch {
+        // Silently ignore refresh errors
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [analysis?.symbol]);
 
   // Timeframe change handler
   const handleTimeframeChange = useCallback(async (newTimeframe: Timeframe) => {
@@ -116,12 +135,12 @@ function App() {
         {analysis && (
           <TickerStrip
             symbol={analysis.symbol}
-            companyName={analysis.company_name}
-            price={analysis.financial_summary.current_price || 0}
-            change={analysis.financial_summary.price_change || 0}
-            changePercent={analysis.financial_summary.price_change_pct || 0}
-            volume={analysis.financial_summary.volume}
-            marketCap={analysis.financial_summary.market_cap}
+            companyName={quote?.name || analysis.company_name}
+            price={quote?.price ?? analysis.financial_summary.current_price ?? 0}
+            change={quote?.change ?? analysis.financial_summary.price_change ?? 0}
+            changePercent={quote?.change_percent ?? analysis.financial_summary.price_change_pct ?? 0}
+            volume={quote?.volume ?? analysis.financial_summary.volume}
+            marketCap={quote?.market_cap ?? analysis.financial_summary.market_cap}
           />
         )}
       </AnimatePresence>

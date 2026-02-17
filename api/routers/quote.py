@@ -31,8 +31,8 @@ class QuoteResponse(BaseModel):
     symbol: str
     name: Optional[str] = None
     price: float
-    change: float
-    change_percent: float
+    change: Optional[float] = None
+    change_percent: Optional[float] = None
     day_low: Optional[float] = None
     day_high: Optional[float] = None
     year_low: Optional[float] = None
@@ -63,12 +63,17 @@ async def get_quote(symbol: str):
         if not quote:
             raise HTTPException(status_code=404, detail=f"Quote not found for {symbol}")
 
+        # Calculate change_percent if not provided
+        change_percent = quote.change_percentage
+        if change_percent is None and quote.previous_close and quote.previous_close != 0:
+            change_percent = (quote.change / quote.previous_close) * 100
+
         return {
             "symbol": quote.symbol,
             "name": quote.name,
             "price": quote.price,
             "change": quote.change,
-            "change_percent": quote.change_percentage,
+            "change_percent": change_percent,
             "day_low": quote.day_low,
             "day_high": quote.day_high,
             "year_low": quote.year_low,

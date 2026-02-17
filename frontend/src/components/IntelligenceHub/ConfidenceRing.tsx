@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
+import type { CompositeBreakdown } from '../../types';
 
 interface ConfidenceRingProps {
   confidence: number; // 0-1
   prediction: 'Growth' | 'Risk' | 'Stagnation';
+  breakdown?: CompositeBreakdown | null;
 }
 
-export function ConfidenceRing({ confidence, prediction }: ConfidenceRingProps) {
+function getBarColor(score: number): string {
+  if (score >= 65) return '#10b981'; // green
+  if (score >= 35) return '#f59e0b'; // amber
+  return '#ef4444'; // red
+}
+
+export function ConfidenceRing({ confidence, prediction, breakdown }: ConfidenceRingProps) {
   const [animatedOffset, setAnimatedOffset] = useState(440); // Start at 0%
 
   // SVG circle parameters
@@ -93,6 +101,57 @@ export function ConfidenceRing({ confidence, prediction }: ConfidenceRingProps) 
       >
         {verdictText}
       </div>
+
+      {/* Score Breakdown */}
+      {breakdown && breakdown.components && (
+        <div className="w-full mt-5 bg-surface border border-border rounded-lg p-4">
+          <h4 className="text-xs tracking-widest text-text-muted mb-4">
+            SCORE BREAKDOWN
+          </h4>
+
+          <div className="space-y-3">
+            {breakdown.components.map((comp) => (
+              <div key={comp.key} className="group">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs text-text-muted">{comp.label.toUpperCase()}</span>
+                  <span
+                    className="text-lg font-mono font-semibold"
+                    style={{ color: getBarColor(comp.score) }}
+                  >
+                    {Math.round(comp.score)}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="h-1 bg-border rounded-full overflow-hidden mt-1">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{
+                      width: `${Math.min(comp.score, 100)}%`,
+                      backgroundColor: getBarColor(comp.score),
+                    }}
+                  />
+                </div>
+                {/* Reasoning on hover */}
+                {comp.reasoning && (
+                  <div className="hidden group-hover:block mt-1 text-[10px] text-text-muted/70 leading-tight">
+                    {comp.reasoning}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Overall reasoning */}
+          {breakdown.overall_reasoning && (
+            <>
+              <div className="h-px bg-border my-4" />
+              <p className="text-[10px] text-text-muted leading-relaxed">
+                {breakdown.overall_reasoning}
+              </p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

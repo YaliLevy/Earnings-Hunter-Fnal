@@ -1,20 +1,29 @@
 # The Earnings Hunter
 
-An AI-powered **earnings analysis platform** that combines hard financial data, CEO tone, and news sentiment into a single, modern dashboard.
-The app implements a **"Golden Triangle"** framework (40% Financials + 35% CEO Tone + 25% Social/News) plus optional multi-agent deep analysis via CrewAI.
+An AI-powered **earnings analysis platform** that combines hard financial data, CEO tone, news sentiment, insider activity, and ML predictions into a single **composite confidence score**.
+
+The app features a **Financial Expert Agent** (GPT-4o-mini) that automatically scores each data component, weighted into a 5-factor composite displayed with an institutional-grade dashboard.
 
 ---
 
 ## Key Features
 
-- **Golden Triangle Scoring**
-  - Blends earnings surprises, margins, insider activity, CEO tone, and news sentiment into a single 0-10 score.
+- **5-Component Composite Scoring**
+  - Financial (25%) + CEO Tone (20%) + News (15%) + Insider (10%) + ML Model (30%)
+  - AI-powered scoring with reasoning for each component
+  - Displayed as animated confidence ring + score breakdown bars
+- **Financial Expert Agent**
+  - GPT-4o-mini scores 4 data categories (0-100) with reasoning
+  - Runs automatically on every search (~$0.01 per analysis)
+  - Receives raw data: financials, transcript, news headlines, insider trades
 - **Modern React Dashboard**
   - React + TypeScript + Vite frontend with institutional-grade UI design
-  - Real-time data visualization with Recharts
+  - 5-axis Analysis Radar chart + animated confidence ring
+  - Score Breakdown with color-coded progress bars and hover reasoning
   - Responsive layout with Tailwind CSS
 - **FastAPI Backend**
   - Python-powered REST API wrapping ML models and data pipelines
+  - Composite breakdown computation from expert scores + ML consensus
   - CORS-enabled for frontend integration
 - **ML Earnings Outlook**
   - Multiple trained models (LightGBM, XGBoost, Random Forest, Logistic Regression, Neural Net)
@@ -37,8 +46,8 @@ The app implements a **"Golden Triangle"** framework (40% Financials + 35% CEO T
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     React Frontend (Vite)                    │
-│  - LegalDisclaimer, CommandBar, TickerStrip                 │
-│  - IntelligenceHub (ConfidenceRing, RadarChart, AIAnalysis) │
+│  - Confidence Ring + Score Breakdown (5 components)         │
+│  - 5-axis Analysis Radar / Golden Triangle fallback         │
 │  - MarketStage (PriceChart, TimeframePills)                 │
 │  - FinancialIntel (Financials, EarningsCall, News, Insider) │
 └─────────────────────────────────────────────────────────────┘
@@ -46,18 +55,20 @@ The app implements a **"Golden Triangle"** framework (40% Financials + 35% CEO T
                               ▼ HTTP/REST
 ┌─────────────────────────────────────────────────────────────┐
 │                    FastAPI Backend                           │
-│  - /api/analyze/{symbol}    → Full analysis + ML prediction │
+│  - /api/analyze/{symbol}    → Full analysis + composite     │
 │  - /api/quote/{symbol}      → Real-time quote               │
 │  - /api/historical/{symbol} → Price history for charts      │
 │  - /api/deep-analysis/{symbol} → CrewAI agents (optional)   │
+│  - Composite breakdown: 5-component weighted score          │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Python ML Pipeline                        │
+│              ML Pipeline + Expert Agent                      │
 │  - EarningsOrchestrator → Coordinates all data fetching     │
 │  - FeaturePipeline → Extracts 48 features                   │
 │  - EarningsPredictor → 5 ML models + consensus voting       │
+│  - FinancialExpertScorer → GPT-4o-mini (scores 4 components)│
 │  - TranscriptAnalyzer → CEO tone NLP                        │
 │  - SentimentFeatureExtractor → News sentiment NLP           │
 └─────────────────────────────────────────────────────────────┘
@@ -81,7 +92,8 @@ The app implements a **"Golden Triangle"** framework (40% Financials + 35% CEO T
 | **Backend** | Python 3.11, FastAPI, Uvicorn |
 | **ML** | scikit-learn, XGBoost, LightGBM, custom trainer & predictor |
 | **NLP** | VADER, TextBlob |
-| **Agents** | CrewAI + OpenAI (`gpt-4o-mini`) |
+| **Expert Agent** | OpenAI `gpt-4o-mini` (direct API, automatic scoring) |
+| **Deep Analysis** | CrewAI + OpenAI `gpt-4o-mini` (optional) |
 | **Data** | FMP `/stable/` API |
 | **Infra** | Docker, Docker Compose |
 
@@ -129,7 +141,8 @@ earnings_hunter/
 │   │   └── predictor.py
 │   └── agents/
 │       ├── orchestrator.py   # Main analysis coordinator
-│       ├── crew.py           # CrewAI 3-agent system
+│       ├── financial_scorer.py # GPT-4o-mini expert agent (scores 4 components)
+│       ├── crew.py           # CrewAI 3-agent system (optional deep analysis)
 │       └── tools/fmp_tools.py
 │
 ├── config/settings.py         # Pydantic settings
@@ -246,7 +259,30 @@ python scripts/train_model.py \
 
 ---
 
-## Golden Triangle Framework
+## Composite Scoring System
+
+The confidence score is computed from **5 weighted components**:
+
+| Component | Weight | Source | Scorer |
+|-----------|--------|--------|--------|
+| **Financial** | 25% | EPS/revenue surprises, margins, price targets | GPT-4o-mini Expert Agent |
+| **CEO Tone** | 20% | Earnings call transcript excerpt | GPT-4o-mini Expert Agent |
+| **News** | 15% | Stock news headlines + sentiment | GPT-4o-mini Expert Agent |
+| **Insider** | 10% | Insider buy/sell transactions | GPT-4o-mini Expert Agent |
+| **ML Model** | 30% | (confidence × 0.6 + agreement × 0.4) × 100 | Algorithmic |
+
+Each component is scored **0-100** with reasoning. The weighted sum produces the final composite confidence displayed in the ring.
+
+**Score color coding:**
+- Green: >= 65 (bullish signal)
+- Amber: 35-64 (neutral/mixed)
+- Red: < 35 (bearish signal)
+
+---
+
+## Golden Triangle Framework (Feature Extraction)
+
+Used for ML **feature extraction** (48 features fed to models):
 
 | Vector | Weight | Source | Features |
 |--------|--------|--------|----------|
@@ -254,11 +290,11 @@ python scripts/train_model.py \
 | **CEO Tone** | 35% | Transcript NLP | Confidence, sentiment, guidance, uncertainty (VADER + TextBlob) |
 | **Social** | 25% | News NLP | News sentiment, bullish/bearish ratio |
 
-**48 total features** are extracted and fed to the ML models.
+**Note:** These weights are for feature extraction only. The final display score uses the 5-component composite weights above.
 
 ---
 
-## CrewAI Deep Analysis
+## CrewAI Deep Analysis (Optional)
 
 When enabled, runs a **three-agent system**:
 
@@ -291,7 +327,18 @@ curl http://localhost:8000/api/analyze/NVDA
 
 ## Changelog
 
-### 2026-02-12: React Frontend + FastAPI Backend
+### 2026-02-17: Composite Scoring System + Financial Expert Agent
+- Added GPT-4o-mini Financial Expert Agent (`src/agents/financial_scorer.py`)
+- Replaced simple confidence calculation with 5-component weighted composite score
+- Agent automatically scores Financial, CEO Tone, News, and Insider data (0-100 with reasoning)
+- ML Model score computed algorithmically from consensus data
+- Added Score Breakdown UI with color-coded progress bars and hover reasoning
+- Upgraded radar chart from 3-axis Golden Triangle to 5-axis Analysis Radar
+- Added `CompositeBreakdown`, `MLConsensus` TypeScript types
+- Added `expert_scores`, `ml_consensus` fields to orchestrator
+- Added `_compute_composite_breakdown()` to API layer
+
+### 2026-02-13: React Frontend + FastAPI Backend
 - Replaced Streamlit with React + TypeScript + Vite
 - Created FastAPI backend wrapping existing ML pipeline
 - Added institutional-grade UI design

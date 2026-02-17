@@ -483,9 +483,8 @@ class FMPClient:
             Dict with earnings date, year, quarter info
         """
         today = datetime.now().strftime("%Y-%m-%d")
-        one_year_ago = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
 
-        # Get historical earnings
+        # Get historical earnings surprises
         earnings = self.get_historical_earnings(symbol)
 
         if not earnings:
@@ -505,23 +504,59 @@ class FMPClient:
         past_earnings.sort(key=lambda x: x.date, reverse=True)
         latest = past_earnings[0]
 
-        # Determine quarter from date
-        date_obj = datetime.strptime(latest.date, "%Y-%m-%d")
-        month = date_obj.month
+        # Get income statements to find the correct fiscal quarter
+        statements = self.get_income_statement(symbol, period="quarter", limit=10)
 
-        # Map month to quarter (rough approximation)
-        if month in [1, 2, 3]:
-            quarter = 4  # Q4 of previous year
-            year = date_obj.year - 1
-        elif month in [4, 5, 6]:
-            quarter = 1
-            year = date_obj.year
-        elif month in [7, 8, 9]:
-            quarter = 2
-            year = date_obj.year
-        else:
-            quarter = 3
-            year = date_obj.year
+        # Find the statement matching the earnings date
+        quarter = None
+        year = None
+
+        if statements:
+            # Match by date (income statement date should be close to earnings date)
+            for stmt in statements:
+                # Income statement date is the fiscal period end date
+                # It should be within 90 days before the earnings report date
+                stmt_date = datetime.strptime(stmt.date, "%Y-%m-%d")
+                earnings_date = datetime.strptime(latest.date, "%Y-%m-%d")
+                days_diff = (earnings_date - stmt_date).days
+
+                if 0 <= days_diff <= 90:  # Earnings typically reported within 90 days after quarter end
+                    # Extract quarter number from period (e.g., "Q1" -> 1)
+                    if stmt.period and stmt.period.startswith("Q"):
+                        quarter = int(stmt.period[1])
+                        # Get fiscal year from the statement date
+                        # For Q1, fiscal year is usually the next calendar year
+                        # (e.g., Q1 FY2026 ends in Dec 2025, reported in Jan 2026)
+                        stmt_year = stmt_date.year
+                        if quarter == 1:
+                            year = stmt_year + 1
+                        else:
+                            year = stmt_year
+                        break
+
+        # Fallback to date-based approximation if no match found
+        if quarter is None or year is None:
+            logger.warning(f"Could not determine fiscal quarter from income statement, using date approximation")
+            date_obj = datetime.strptime(latest.date, "%Y-%m-%d")
+            month = date_obj.month
+
+            # Companies typically report ~45 days after quarter end
+            # Jan/Feb/Mar reports → Q4 of previous year
+            # Apr/May/Jun reports → Q1 of current year
+            # Jul/Aug/Sep reports → Q2 of current year
+            # Oct/Nov/Dec reports → Q3 of current year
+            if month in [1, 2, 3]:
+                quarter = 4
+                year = date_obj.year - 1
+            elif month in [4, 5, 6]:
+                quarter = 1
+                year = date_obj.year
+            elif month in [7, 8, 9]:
+                quarter = 2
+                year = date_obj.year
+            else:
+                quarter = 3
+                year = date_obj.year
 
         return {
             "symbol": symbol.upper(),

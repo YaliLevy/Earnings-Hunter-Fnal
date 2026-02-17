@@ -169,13 +169,16 @@ class TranscriptAnalyzer:
         confidence_ratio = (confidence_count / total_words) * 1000
         uncertainty_ratio = (uncertainty_count / total_words) * 1000
 
-        # Calculate confidence score (-1 to 1)
+        # Calculate confidence score (0 to 1)
         # More confidence words relative to uncertainty = higher score
         total_signal_words = confidence_count + uncertainty_count
         if total_signal_words > 0:
-            confidence_score = (confidence_count - uncertainty_count) / total_signal_words
+            # confidence_score = confidence_count / total_signal_words
+            # This gives 0.0 when all uncertainty, 1.0 when all confidence, 0.5 when equal
+            confidence_score = confidence_count / total_signal_words
         else:
-            confidence_score = 0.0
+            # Default to neutral (0.5) when no signal words found
+            confidence_score = 0.5
 
         return {
             "confidence_ratio": confidence_ratio,
@@ -369,12 +372,11 @@ class TranscriptAnalyzer:
         if not transcript:
             return self._empty_ceo_result()
 
-        # Step 1: Extract CEO/CFO sections
-        ceo_text = self.extract_ceo_sections(transcript)
-
-        if not ceo_text:
-            logger.warning("No CEO sections found, using full transcript")
-            ceo_text = transcript
+        # Step 1: Use full transcript for more comprehensive analysis
+        # Note: CEO section extraction often misses important content,
+        # and full transcript analysis gives better signal
+        ceo_text = transcript
+        logger.info(f"Analyzing full transcript ({len(transcript)} chars)")
 
         # Step 2: Analyze confidence language
         confidence_analysis = self.analyze_confidence_language(ceo_text)

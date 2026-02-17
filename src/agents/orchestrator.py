@@ -19,6 +19,7 @@ from src.feature_engineering.feature_pipeline import FeaturePipeline
 from src.feature_engineering.transcript_analyzer import TranscriptAnalyzer
 from src.feature_engineering.sentiment_features import SentimentFeatureExtractor
 from src.ml.predictor import EarningsPredictor
+from src.agents.financial_scorer import FinancialExpertScorer
 from config.settings import get_settings
 
 logger = get_logger(__name__)
@@ -45,6 +46,9 @@ class AnalysisResult:
     transcript_content: Optional[str] = None
     news_articles: Optional[list] = None
     insider_transactions: Optional[list] = None
+    # Expert AI scoring and ML consensus
+    expert_scores: Optional[Dict[str, Any]] = None
+    ml_consensus: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -81,6 +85,7 @@ class EarningsOrchestrator:
         self.transcript_analyzer = TranscriptAnalyzer()
         self.predictor = EarningsPredictor()
         self.sentiment_extractor = SentimentFeatureExtractor()
+        self.expert_scorer = FinancialExpertScorer()
 
         # Initialize cache
         self.use_cache = use_cache
@@ -167,6 +172,16 @@ class EarningsOrchestrator:
                 "best_model_confidence": None
             }
 
+        # Extract ML consensus data
+        ml_consensus = {
+            "agreement_ratio": prediction_result.get("agreement_ratio", 1.0),
+            "vote_distribution": prediction_result.get("vote_distribution", {}),
+            "models_agree": prediction_result.get("models_agree", 1),
+            "models_total": prediction_result.get("models_total", 1),
+            "best_model_confidence": prediction_result.get("best_model_confidence"),
+            "best_model_name": prediction_result.get("best_model_name", "unknown"),
+        }
+
         # Step 6: Calculate Golden Triangle scores
         golden_triangle = self.feature_pipeline.get_golden_triangle_scores(features)
 
@@ -219,6 +234,20 @@ class EarningsOrchestrator:
             financial_summary["price_change_pct"] = data["quote"].change_percentage
             financial_summary["company_name"] = data["quote"].name
 
+        # Step 8.5: Run Financial Expert Scorer (GPT-4o-mini)
+        logger.info("Running financial expert scoring...")
+        try:
+            expert_scores = self.expert_scorer.score(
+                financial_summary=financial_summary,
+                transcript_content=data.get("transcript"),
+                news_articles=news_articles_raw,
+                insider_transactions=insider_transactions_raw,
+                prediction_result=prediction_result,
+            )
+        except Exception as e:
+            logger.warning(f"Expert scoring failed: {e}. Using defaults.")
+            expert_scores = None
+
         # Step 9: Create result
         result = AnalysisResult(
             symbol=symbol,
@@ -238,7 +267,10 @@ class EarningsOrchestrator:
             # Raw data for frontend
             transcript_content=data.get("transcript"),
             news_articles=news_articles_raw,
-            insider_transactions=insider_transactions_raw
+            insider_transactions=insider_transactions_raw,
+            # Expert AI scores and ML consensus
+            expert_scores=expert_scores,
+            ml_consensus=ml_consensus,
         )
 
         # Cache result
@@ -254,18 +286,40 @@ class EarningsOrchestrator:
         year: int,
         quarter: int
     ) -> Dict[str, Any]:
-        """Fetch all required data."""
+        """
+        Fetch all required data for the specific quarter.
+
+        Note: We fetch recent data and filter to the relevant quarter where applicable.
+        """
         data = {}
 
-        # Financial data
+        # Financial data - get recent history
         try:
-            data["earnings"] = self.fmp_client.get_earnings_surprises(symbol)
+            all_earnings = self.fmp_client.get_earnings_surprises(symbol)
+            # Filter to get earnings for this specific quarter
+            # Match by comparing fiscal periods
+            data["earnings"] = all_earnings[:20] if all_earnings else []  # Keep recent 20 for historical context
         except Exception as e:
             logger.warning(f"Failed to fetch earnings: {e}")
             data["earnings"] = []
 
         try:
-            data["statements"] = self.fmp_client.get_income_statement(symbol)
+            all_statements = self.fmp_client.get_income_statement(symbol, period="quarter", limit=20)
+            # Filter to the specific quarter
+            target_period = f"Q{quarter}"
+            matching_statements = []
+            for stmt in all_statements:
+                if stmt.period == target_period:
+                    # Check if it's the right year (approximate)
+                    stmt_date = datetime.strptime(stmt.date, "%Y-%m-%d")
+                    # For Q1, fiscal year is usually next calendar year
+                    expected_year = year if quarter > 1 else year - 1
+                    if abs(stmt_date.year - expected_year) <= 1:
+                        matching_statements.append(stmt)
+                        break  # Found the match
+
+            data["statements"] = matching_statements if matching_statements else all_statements[:1]
+            logger.info(f"Filtered statements for Q{quarter} {year}: found {len(data['statements'])} matching")
         except Exception as e:
             logger.warning(f"Failed to fetch statements: {e}")
             data["statements"] = []
@@ -283,7 +337,8 @@ class EarningsOrchestrator:
             data["price_target"] = None
 
         try:
-            data["insiders"] = self.fmp_client.get_insider_trading(symbol)
+            # Get insider trading for last 6 months (recent activity)
+            data["insiders"] = self.fmp_client.get_insider_trading(symbol, limit=100)
         except Exception as e:
             logger.warning(f"Failed to fetch insider data: {e}")
             data["insiders"] = []
@@ -297,15 +352,19 @@ class EarningsOrchestrator:
             logger.warning(f"Failed to fetch quote: {e}")
             data["quote"] = None
 
-        # Transcript (CRITICAL for CEO tone)
+        # Transcript (CRITICAL for CEO tone) - get the specific quarter
         try:
             transcript = self.fmp_client.get_earnings_call_transcript(symbol, year, quarter)
             data["transcript"] = transcript.content if transcript else None
+            if data["transcript"]:
+                logger.info(f"Successfully fetched transcript for Q{quarter} {year}")
+            else:
+                logger.warning(f"No transcript content for Q{quarter} {year}")
         except Exception as e:
-            logger.warning(f"Failed to fetch transcript: {e}")
+            logger.warning(f"Failed to fetch transcript for Q{quarter} {year}: {e}")
             data["transcript"] = None
 
-        # Stock news (replaces social sentiment API)
+        # Stock news (replaces social sentiment API) - recent news only
         try:
             data["stock_news"] = self.fmp_client.get_stock_news(symbol, limit=50)
         except Exception as e:
