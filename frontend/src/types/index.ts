@@ -173,7 +173,7 @@ export interface TranscriptData {
 }
 
 // UI State Types
-export type Timeframe = '1W' | '1M' | '3M' | '6M' | '1Y';
+export type Timeframe = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y';
 
 export interface AppState {
   showDisclaimer: boolean;
