@@ -22,8 +22,6 @@ develop-eggs
 .installed.cfg
 lib
 lib64
-*.manifest
-*.spec
 
 # Virtual environments
 venv
@@ -37,9 +35,6 @@ ENV
 *.swp
 *.swo
 *~
-.project
-.pydevproject
-.settings
 
 # Testing
 .pytest_cache
@@ -48,21 +43,21 @@ htmlcov
 .tox
 .nox
 
-# Documentation
-docs/_build
-
 # Environment files
 .env
 .env.local
 .env.*.local
-*.env
 
-# Data (will be mounted as volume)
+# Node modules (frontend deps installed in Docker build)
+frontend/node_modules
+node_modules
+
+# Data cache (models ARE included - needed for ML predictions)
 data/raw/*
 data/processed/*
-data/models/*
 data/cache/*
-data/training/*
+!data/models
+!data/training/training_data.csv
 !data/.gitkeep
 
 # Logs
@@ -72,6 +67,7 @@ logs
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Temp files
 *.tmp
@@ -83,11 +79,10 @@ temp/
 .ipynb_checkpoints
 
 # Coverage
-.coverage
 coverage.xml
 
 # mypy
 .mypy_cache
 
-# Local development
-*.local
+# Legacy Streamlit
+app/

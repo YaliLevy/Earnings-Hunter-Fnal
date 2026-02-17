@@ -1,7 +1,5 @@
 # Docker Compose for The Earnings Hunter
-# Multi-agent corporate health analysis platform
-
-version: '3.8'
+# React + FastAPI single-container architecture
 
 services:
   earnings-hunter:
@@ -10,31 +8,24 @@ services:
       dockerfile: Dockerfile
     container_name: earnings-hunter
     ports:
-      - "8501:8501"
+      - "8000:8000"
     environment:
-      # API Keys (set in .env file)
       - FMP_API_KEY=${FMP_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
-      - REDDIT_CLIENT_SECRET=${REDDIT_CLIENT_SECRET}
-      - REDDIT_USER_AGENT=${REDDIT_USER_AGENT:-EarningsHunter/1.0}
-      # App settings
+      - PORT=8000
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - CACHE_EXPIRY_HOURS=${CACHE_EXPIRY_HOURS:-24}
     volumes:
-      # Persist data
       - ./data:/app/data
-      # Mount config for development
-      - ./config:/app/config:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
-  # Optional: Run data collection as a separate service
+  # Optional: Run data collection
   data-collector:
     build:
       context: .
@@ -43,18 +34,13 @@ services:
     environment:
       - FMP_API_KEY=${FMP_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
-      - REDDIT_CLIENT_SECRET=${REDDIT_CLIENT_SECRET}
-      - REDDIT_USER_AGENT=${REDDIT_USER_AGENT:-EarningsHunter/1.0}
     volumes:
       - ./data:/app/data
     command: ["python", "scripts/collect_training_data.py", "--output-dir", "data/training"]
     profiles:
       - collect
-    depends_on:
-      - earnings-hunter
 
-  # Optional: Run model training as a separate service
+  # Optional: Run model training
   model-trainer:
     build:
       context: .
@@ -68,13 +54,3 @@ services:
     command: ["python", "scripts/train_model.py", "--data", "data/training/training_data.csv", "--output-dir", "data/models"]
     profiles:
       - train
-    depends_on:
-      - earnings-hunter
-
-volumes:
-  data:
-    driver: local
-
-networks:
-  default:
-    name: earnings-hunter-network

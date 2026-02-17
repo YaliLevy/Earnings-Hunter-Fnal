@@ -1,7 +1,7 @@
 # CLAUDE.md - Project Memory & Progress Tracker
 
 > **IMPORTANT**: This file is the project's memory. Update it after EVERY change!
-> Last Updated: 2026-02-17 (Composite Scoring System + Financial Expert Agent)
+> Last Updated: 2026-02-17 (Railway Deployment + 1D Charts + Fiscal Year Fix)
 
 ## Project Overview
 **Name:** The Earnings Hunter
@@ -106,10 +106,24 @@ All original files completed (see previous version for details)
 | 67 | src/agents/financial_scorer.py | ✅ Done | GPT-4o-mini expert scorer (NEW FILE) |
 | 68 | src/agents/orchestrator.py | ✅ Done | Added expert_scores + ml_consensus fields |
 | 69 | api/routers/analysis.py | ✅ Done | Added _compute_composite_breakdown() |
-| 70 | frontend/src/types/index.ts | ✅ Done | Added CompositeBreakdown, MLConsensus types |
+| 70 | frontend/src/types/index.ts | ✅ Done | Added CompositeBreakdown, MLConsensus types + '1D' Timeframe |
 | 71 | frontend/src/components/IntelligenceHub/ConfidenceRing.tsx | ✅ Done | Added Score Breakdown bars |
 | 72 | frontend/src/components/IntelligenceHub/GoldenTriangleRadar.tsx | ✅ Done | 5-axis radar with composite data |
 | 73 | frontend/src/components/IntelligenceHub/index.tsx | ✅ Done | Wired composite score to ring |
+
+### Phase 11: Railway Deployment + Fixes (2026-02-17)
+
+| # | File | Status | Notes |
+|---|------|--------|-------|
+| 74 | src/data_ingestion/fmp_client.py | ✅ Done | Fixed fiscal year detection for non-calendar FY companies |
+| 75 | Dockerfile | ✅ Done | Multi-stage build: React + FastAPI in single container |
+| 76 | api/main.py | ✅ Done | Static file serving + SPA routing + Railway CORS |
+| 77 | docker-compose.yml | ✅ Done | Updated for React+FastAPI (port 8000) |
+| 78 | .dockerignore | ✅ Done | Updated: include models, exclude node_modules |
+| 79 | railway.json | ✅ Done | Railway deployment config (NEW FILE) |
+| 80 | requirements.txt | ✅ Done | Added fastapi/uvicorn, removed streamlit |
+| 81 | frontend/src/components/MarketStage/TimeframePills.tsx | ✅ Done | Added 1D timeframe |
+| 82 | api/routers/historical.py | ✅ Done | Added 1D → 5 days mapping |
 
 ---
 
@@ -118,6 +132,9 @@ All original files completed (see previous version for details)
 
 | Timestamp | Action | Files Changed | Notes |
 |-----------|--------|---------------|-------|
+| 2026-02-17 | **RAILWAY DEPLOYMENT PREP** | Dockerfile, api/main.py, docker-compose.yml, .dockerignore, railway.json, requirements.txt | Multi-stage Docker build, SPA serving, Railway config |
+| 2026-02-17 | **1D CHART TIMEFRAME** | TimeframePills.tsx, types/index.ts, historical.py | Added daily interval (5 trading days) |
+| 2026-02-17 | **FISCAL YEAR FIX** | fmp_client.py | Fixed transcript detection for non-calendar FY (NVDA, AAPL, MSFT) using get_available_transcripts() API |
 | 2026-02-17 | **COMPOSITE SCORING SYSTEM** | financial_scorer.py (NEW), orchestrator.py, analysis.py, types/index.ts, ConfidenceRing.tsx, GoldenTriangleRadar.tsx, index.tsx | 5-component weighted scoring with AI expert agent |
 | 2026-02-17 | **FINANCIAL EXPERT AGENT** | src/agents/financial_scorer.py | GPT-4o-mini scores 4 components (0-100) with reasoning, runs automatically |
 | 2026-02-17 | **RADAR CHART UPGRADE** | GoldenTriangleRadar.tsx | 3-axis → 5-axis radar with composite breakdown |
@@ -377,12 +394,29 @@ cd frontend
 npm run dev
 ```
 
-### Docker (TODO - needs update)
+### Docker (Local)
 ```bash
 docker-compose up --build
+# Opens at http://localhost:8000
 ```
 
-**Note:** Docker config needs update for React + FastAPI setup
+### Railway (Cloud) - Two Environments
+**Architecture:** Single container serves React static files + FastAPI API
+
+**Setup:**
+1. Connect GitHub repo to Railway
+2. Create two environments: `development` (dev branch) and `production` (main branch)
+3. Set environment variables in each: `FMP_API_KEY`, `OPENAI_API_KEY`
+4. Railway auto-detects `Dockerfile` and deploys
+
+**Workflow:**
+- Push to `dev` branch → deploys to development environment
+- Merge `dev` → `main` → deploys to production environment
+
+**Key files:**
+- `railway.json` - Build config (Dockerfile builder, health check)
+- `Dockerfile` - Multi-stage: Node builds React → Python serves FastAPI + static
+- `api/main.py` - Serves `/assets` + SPA catch-all + Railway CORS via `RAILWAY_PUBLIC_DOMAIN`
 
 ---
 
@@ -428,8 +462,10 @@ earnings_hunter/
 │   └── training/             # 1,050 earnings quarters
 │
 ├── app/                       # Legacy Streamlit (DEPRECATED)
-├── Dockerfile
-├── docker-compose.yml
+├── Dockerfile                 # Multi-stage: React build + FastAPI serve
+├── docker-compose.yml         # Local Docker setup (port 8000)
+├── railway.json               # Railway cloud deployment config
+├── .dockerignore              # Excludes node_modules, includes models
 ├── requirements.txt
 ├── CLAUDE.md                  # This file
 └── README.md
@@ -456,14 +492,18 @@ earnings_hunter/
 15. **GPT-4o-mini for expert scoring** - Cheapest, fastest, runs automatically on every search
 16. **Direct OpenAI API call** - Not CrewAI (lighter, faster for single-agent task)
 17. **ML component is algorithmic** - Not scored by AI agent (already a model output)
+18. **Railway single container** - FastAPI serves both API + React static files
+19. **Two Railway environments** - dev (development branch) + production (main branch)
+20. **Fiscal year from transcripts API** - `get_available_transcripts()` returns correct fiscalYear for all companies
 
 ---
 
 ## Known Issues & TODOs
 
 ### High Priority
-- [ ] Update Docker config for React + FastAPI
-- [ ] Add deployment guide (Vercel frontend + Python API)
+- [x] Update Docker config for React + FastAPI ✅
+- [x] Railway deployment config ✅
+- [x] Fix fiscal year detection for non-calendar FY companies ✅
 - [ ] Add loading states in frontend
 - [ ] Error boundary for React app
 
