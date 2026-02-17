@@ -504,47 +504,57 @@ class FMPClient:
         past_earnings.sort(key=lambda x: x.date, reverse=True)
         latest = past_earnings[0]
 
-        # Get income statements to find the correct fiscal quarter
-        statements = self.get_income_statement(symbol, period="quarter", limit=10)
-
-        # Find the statement matching the earnings date
+        # Determine the correct fiscal year and quarter.
+        # Use the available transcripts list from FMP which contains the correct
+        # fiscalYear. This handles companies with non-calendar fiscal years
+        # (e.g., NVDA fiscal year ends in January).
         quarter = None
         year = None
 
-        if statements:
-            # Match by date (income statement date should be close to earnings date)
-            for stmt in statements:
-                # Income statement date is the fiscal period end date
-                # It should be within 90 days before the earnings report date
-                stmt_date = datetime.strptime(stmt.date, "%Y-%m-%d")
-                earnings_date = datetime.strptime(latest.date, "%Y-%m-%d")
-                days_diff = (earnings_date - stmt_date).days
-
-                if 0 <= days_diff <= 90:  # Earnings typically reported within 90 days after quarter end
-                    # Extract quarter number from period (e.g., "Q1" -> 1)
-                    if stmt.period and stmt.period.startswith("Q"):
-                        quarter = int(stmt.period[1])
-                        # Get fiscal year from the statement date
-                        # For Q1, fiscal year is usually the next calendar year
-                        # (e.g., Q1 FY2026 ends in Dec 2025, reported in Jan 2026)
-                        stmt_year = stmt_date.year
-                        if quarter == 1:
-                            year = stmt_year + 1
-                        else:
-                            year = stmt_year
+        try:
+            available_transcripts = self.get_available_transcripts(symbol)
+            if available_transcripts:
+                # Match transcript by earnings date
+                for t in available_transcripts:
+                    if t.get("date") == latest.date:
+                        quarter = t["quarter"]
+                        year = t["fiscalYear"]
+                        logger.info(f"Matched transcript: Q{quarter} FY{year} (date: {latest.date})")
                         break
 
-        # Fallback to date-based approximation if no match found
+                # If no exact date match, take the most recent transcript
+                if quarter is None and available_transcripts:
+                    t = available_transcripts[0]
+                    quarter = t["quarter"]
+                    year = t["fiscalYear"]
+                    logger.info(f"Using latest available transcript: Q{quarter} FY{year} (date: {t.get('date')})")
+        except Exception as e:
+            logger.warning(f"Failed to fetch available transcripts: {e}")
+
+        # Fallback: use income statements if transcript lookup failed
         if quarter is None or year is None:
-            logger.warning(f"Could not determine fiscal quarter from income statement, using date approximation")
+            statements = self.get_income_statement(symbol, period="quarter", limit=10)
+            if statements:
+                for stmt in statements:
+                    stmt_date = datetime.strptime(stmt.date, "%Y-%m-%d")
+                    earnings_date = datetime.strptime(latest.date, "%Y-%m-%d")
+                    days_diff = (earnings_date - stmt_date).days
+
+                    if 0 <= days_diff <= 120:
+                        if stmt.period and stmt.period.startswith("Q"):
+                            quarter = int(stmt.period[1])
+                            if stmt.calendar_year:
+                                year = int(stmt.calendar_year)
+                            else:
+                                year = stmt_date.year
+                            logger.info(f"Fallback: matched to {stmt.period} FY{year}")
+                            break
+
+        # Last fallback: date-based approximation
+        if quarter is None or year is None:
+            logger.warning(f"Could not determine fiscal quarter, using date approximation")
             date_obj = datetime.strptime(latest.date, "%Y-%m-%d")
             month = date_obj.month
-
-            # Companies typically report ~45 days after quarter end
-            # Jan/Feb/Mar reports → Q4 of previous year
-            # Apr/May/Jun reports → Q1 of current year
-            # Jul/Aug/Sep reports → Q2 of current year
-            # Oct/Nov/Dec reports → Q3 of current year
             if month in [1, 2, 3]:
                 quarter = 4
                 year = date_obj.year - 1

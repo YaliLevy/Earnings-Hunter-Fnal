@@ -63,6 +63,7 @@ async def get_historical_prices(
 
     # Convert timeframe to days if provided
     timeframe_days = {
+        "1D": 5,   # Show last 5 trading days for daily view
         "1W": 7,
         "1M": 30,
         "3M": 90,

@@ -6,7 +6,7 @@ interface TimeframePillsProps {
   disabled?: boolean;
 }
 
-const TIMEFRAMES: Timeframe[] = ['1W', '1M', '3M', '6M', '1Y'];
+const TIMEFRAMES: Timeframe[] = ['1D', '1W', '1M', '3M', '6M', '1Y'];
 
 export function TimeframePills({ selected, onChange, disabled }: TimeframePillsProps) {
   return (
