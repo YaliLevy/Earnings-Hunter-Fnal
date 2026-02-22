@@ -95,11 +95,22 @@ export function ConfidenceRing({ confidence, prediction, breakdown }: Confidence
       </div>
 
       {/* Verdict */}
-      <div
-        className="text-xl font-bold tracking-wider mt-4"
-        style={{ color: ringColor }}
-      >
-        {verdictText}
+      <div className="relative group mt-4">
+        <div
+          className="text-xl font-bold tracking-wider cursor-help"
+          style={{ color: ringColor }}
+        >
+          {verdictText}
+        </div>
+        <div className="hidden group-hover:block absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-surface border border-border rounded-lg p-3 z-10 shadow-lg">
+          <p className="text-[10px] text-text-muted leading-relaxed">
+            ML prediction for price movement 5 days post-earnings.
+            <span className="block mt-1 text-cyber-success">BULLISH = price up &gt;5%</span>
+            <span className="block text-cyber-danger">BEARISH = price down &gt;5%</span>
+            <span className="block text-cyber-warning">NEUTRAL = between -5% and +5%</span>
+            <span className="block mt-1 text-text-muted/60">Independent from the confidence score, which measures overall company health.</span>
+          </p>
+        </div>
       </div>
 
       {/* Score Breakdown */}
