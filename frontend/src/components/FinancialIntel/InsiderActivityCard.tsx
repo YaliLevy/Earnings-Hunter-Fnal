@@ -93,8 +93,8 @@ export function InsiderActivityCard({ financialData, symbol, insiderTransactions
             </div>
 
             {/* Trades List */}
-            <ScrollArea.Root className="flex-1 overflow-hidden m-6">
-              <ScrollArea.Viewport className="w-full h-full">
+            <ScrollArea.Root className="flex-1 overflow-hidden m-6" style={{ maxHeight: 'calc(80vh - 220px)' }}>
+              <ScrollArea.Viewport className="w-full h-full" style={{ maxHeight: 'calc(80vh - 220px)' }}>
                 {insiderTransactions && insiderTransactions.length > 0 ? (
                   <div className="space-y-3">
                     {insiderTransactions.map((trade, index) => (
