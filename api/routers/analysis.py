@@ -208,7 +208,9 @@ def _compute_composite_breakdown(result: AnalysisResult) -> Optional[Dict[str, A
     insider_score = expert.get("insider_score", 50)
 
     # ML model score (0-100): blend of confidence and agreement
-    best_conf = (ml or {}).get("best_model_confidence") or (result.confidence or 0.5)
+    # Cap at 0.85 and adjust by CV accuracy (54%) to prevent inflated scores
+    raw_conf = (ml or {}).get("best_model_confidence") or (result.confidence or 0.5)
+    best_conf = min(raw_conf, 0.85) * 0.54 / 0.5
     agreement = (ml or {}).get("agreement_ratio", 1.0)
     ml_score = (best_conf * 0.6 + agreement * 0.4) * 100
 
