@@ -274,8 +274,8 @@ class StockQuote(BaseModel):
     year_low: Optional[float] = Field(None, alias="yearLow")
     year_high: Optional[float] = Field(None, alias="yearHigh")
     market_cap: Optional[float] = Field(None, alias="marketCap")
-    volume: Optional[int] = None
-    avg_volume: Optional[int] = Field(None, alias="avgVolume")
+    volume: Optional[float] = None
+    avg_volume: Optional[float] = Field(None, alias="avgVolume")
     open_price: Optional[float] = Field(None, alias="open")
     previous_close: Optional[float] = Field(None, alias="previousClose")
     pe: Optional[float] = None
@@ -301,8 +301,8 @@ class HistoricalPrice(BaseModel):
     low: float
     close: float
     adj_close: Optional[float] = Field(None, alias="adjClose")
-    volume: int
-    unadjusted_volume: Optional[int] = Field(None, alias="unadjustedVolume")
+    volume: Optional[float] = None
+    unadjusted_volume: Optional[float] = Field(None, alias="unadjustedVolume")
     change: Optional[float] = None
     change_percent: Optional[float] = Field(None, alias="changePercent")
 
