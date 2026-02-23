@@ -23,7 +23,7 @@ export function MarketStage({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-baseline gap-3">
           <h2 className="text-sm font-medium text-text-primary">
-            {symbol || 'AAPL'} — {timeframe}
+            {symbol ? `${symbol} — ${timeframe}` : 'Enter a ticker to begin'}
           </h2>
           <span className="text-xs text-text-muted">SMA(20) + Projection</span>
         </div>
