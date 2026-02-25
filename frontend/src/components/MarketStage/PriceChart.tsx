@@ -21,11 +21,14 @@ export function PriceChart({ data, symbol }: PriceChartProps) {
   }
 
   // Combine price data with SMA and forecast for charting
-  const chartData = data.prices.map((p, i) => ({
+  // Reverse so oldest dates are on the left (chronological order)
+  const reversedPrices = [...data.prices].reverse();
+  const reversedSma = [...data.sma20].reverse();
+  const chartData = reversedPrices.map((p, i) => ({
     date: formatDate(p.date),
     rawDate: p.date,
     price: p.close,
-    sma20: data.sma20[i],
+    sma20: reversedSma[i],
     isHistorical: true,
   }));
 
